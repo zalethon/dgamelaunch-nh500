@@ -1,0 +1,89 @@
+diff -urB NetHack-5.0.0.bak/include/config.h NetHack-5.0.0/include/config.h
+--- NetHack-5.0.0.bak/include/config.h	2026-05-21 17:21:57.837822465 -0400
++++ NetHack-5.0.0/include/config.h	2026-05-21 17:22:19.470437749 -0400
+@@ -340,7 +340,7 @@
+ #endif
+ #ifndef PERS_IS_UID
+ #if !defined(MICRO) && !defined(MACOS9) && !defined(WIN32)
+-#define PERS_IS_UID 1 /* delete for PERSMAX per name; now per uid */
++#define PERS_IS_UID 0 /* delete for PERSMAX per name; now per uid */
+ #else
+ #define PERS_IS_UID 0
+ #endif
+@@ -444,7 +444,7 @@
+  * otherwise it will be the current directory.
+  */
+ #ifndef HACKDIR
+-#define HACKDIR "/usr/games/lib/nethackdir"
++#define HACKDIR "/opt/nh500"
+ #endif
+ 
+ /*
+diff -urB NetHack-5.0.0.bak/include/unixconf.h NetHack-5.0.0/include/unixconf.h
+--- NetHack-5.0.0.bak/include/unixconf.h	2026-05-21 17:21:57.845822692 -0400
++++ NetHack-5.0.0/include/unixconf.h	2026-05-21 17:22:19.478437978 -0400
+@@ -83,7 +83,7 @@
+  * If you want the static parts of your playground on a read-only file
+  * system, define VAR_PLAYGROUND to be where the variable parts are kept.
+  */
+-/* #define VAR_PLAYGROUND "/var/lib/games/nethack" */
++#define VAR_PLAYGROUND "/var/nh500"
+ 
+ /*
+  * Define DEF_PAGER as your default pager, e.g. "/bin/cat" or "/usr/ucb/more"
+diff -urB NetHack-5.0.0.bak/sys/unix/hints/include/multiw-1.500 NetHack-5.0.0/sys/unix/hints/include/multiw-1.500
+--- NetHack-5.0.0.bak/sys/unix/hints/include/multiw-1.500	2026-05-21 17:21:57.929825081 -0400
++++ NetHack-5.0.0/sys/unix/hints/include/multiw-1.500	2026-05-21 17:25:44.476492435 -0400
+@@ -5,8 +5,8 @@
+ # 1. Which windowing interface(s) should be included in this binary?
+ # One or more of these can be manually uncommented and/or can be specified
+ # on the 'make' command line.  If none are enabled, tty will be used.
+-#WANT_WIN_TTY=1
+-#WANT_WIN_CURSES=1
++WANT_WIN_TTY=1
++WANT_WIN_CURSES=1
+ #WANT_WIN_X11=1
+ #WANT_WIN_QT=1
+ 
+@@ -14,7 +14,7 @@
+ # Exactly one of these can be manually uncommented and/or can be specified
+ # on the 'make' command line.  If none is enabled, the first among
+ # WANT_WIN_{tty,curses,X11,Qt} that is enabled will become default.
+-#WANT_DEFAULT=tty
++WANT_DEFAULT=tty
+ #WANT_DEFAULT=curses
+ #WANT_DEFAULT=Qt
+ #WANT_DEFAULT=X11
+diff -urB NetHack-5.0.0.bak/sys/unix/hints/linux.500 NetHack-5.0.0/sys/unix/hints/linux.500
+--- NetHack-5.0.0.bak/sys/unix/hints/linux.500	2026-05-21 17:21:57.929825081 -0400
++++ NetHack-5.0.0/sys/unix/hints/linux.500	2026-05-21 17:22:19.482438091 -0400
+@@ -40,7 +40,7 @@
+ endif
+ 
+ #4. Other
+-GAMEUID  = $(USER)
++GAMEUID  = games
+ GAMEGRP  = games
+ 
+ # This gives better backtraces by making all core functions global; this
+@@ -418,16 +418,16 @@
+ MOREALL=$(MAKE) install
+ else #!WANT_SOURCE_INSTALL
+ #PREFIX=/usr
+-PREFIX=$(wildcard ~)/nh/install
+-HACKDIR=$(PREFIX)/games/lib/nethackdir
+-SHELLDIR = $(PREFIX)/games
++PREFIX=/.
++HACKDIR=$(PREFIX)/opt/nh500
++SHELLDIR = $(PREFIX)
+ VARDIRPERM = 0755
+ VARFILEPERM = 0600
+ GAMEPERM = 0755
+ endif #?WANT_SOURCE_INSTALL
+ 
+ INSTDIR=$(HACKDIR)
+-VARDIR = $(HACKDIR)
++VARDIR = $(PREFIX)/var/nh500
+ 
+ ifdef MAKEFILE_TOP
+ TESTGDBPATH=/usr/bin/gdb
