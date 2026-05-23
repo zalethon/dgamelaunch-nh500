@@ -1,0 +1,73 @@
+DGAMELAUNCH(8)                                           System Manager's Manual                                           DGAMELAUNCH(8)
+
+NAME
+       dgamelaunch - Network console game launcher
+
+SYNOPSIS
+       dgamelaunch [ -h hostname ] [ -f config ] [ -q ] [ -p ] [ -a ] [ -e ]
+
+DESCRIPTION
+       dgamelaunch  is  a  network-based  game  shell where anyone can sign up for an account and start playing any game which suits your
+       fancy - currently it supports NetHack and Slash'Em.
+
+       The user is presented with a curses-based menu to watch other games, edit the options or play the game.
+
+OPTIONS
+       -f config
+              Specify the location of the configuration file.
+
+       -q     Don't print errors pertaining to the server configuration.
+
+       -a     Enter user authentication mode.  dgamelaunch will read user name and password from stdin, check  them,  check  whether  the
+              user doesn't have a game in progress already, then write the inprogress lock.  Returns 0 if everything was successful.
+
+       -e     Start  game  server  to  handle  incoming NhExt connection.  dgamelaunch will execute /bin/nethack --proxy after chroot and
+              shedding privs.
+
+       -p     Ignored; solely for compatibility with login(1)
+
+       -h hostname
+              Ignored; solely for compatibility with login(1)
+
+CRASH RECOVERY
+       If a user somehow disconnects in an unclean way, dgamelaunch will usually send nethack the SIGHUP signal, which causes nethack  to
+       save the game.
+
+       If a user tries to play while he already has a game in progress (for example because nethack hung), dgamelaunch will warn the user
+       and  send  nethack the SIGHUP signal if the user agrees. If nethack does not shut down within 10 seconds, dgamelaunch will ask the
+       user for permission to send it the SIGTERM signal, which causes nethack to terminate quickly (without leaving a savefile usually).
+
+       In some cases (e.g. at "Restoring save file...--More--") nethack doesn't leave a savefile if sent SIGHUP. To avoid loss of  games,
+       dgamelaunch  can  backup  the savefile. A human must then restore the backup if necessary.  This must be configured with the save‐
+       filefmt option in the configuration file.
+
+AUTHORS
+       M. Drew Streib wrote the original version.
+
+       Later, Joshua Kwan, Brett Carrington and Jilles Tjoelker added many new features.
+
+       NhExt support was written by J. Ali Harlow.
+
+FILES
+       /etc/dgamelaunch.conf            Default configuration file (can                                  be changed at compile time).
+
+       All other files are in the chroot as defined in the configuration file. Most of these filenames can be changed in  the  configura‐
+       tion file.
+
+       dgl-login                        Login names, passwords and email                                  addresses.
+       dgl-lock                         Lockfile for dgl-login, locked                                  with fcntl(2).
+       dgl-banner                       Text shown on the screen.
+       dgl-default-rcfile               Options file for new accounts.
+       bin/nethack                      The NetHack binary.
+       dgldir/inprogress/*              A  file  for  each  game  in  progress;                                  the file is locked (with
+       fcntl(2))                                  when the dgamelaunch process                                  is still alive.
+       dgldir/rcfiles/*                 Options files.
+       dgldir/ttyrec/<login>/*.ttyrec   Recorded games, this may get                                  very big very quickly.
+
+SEE ALSO
+       nethack(6), slashem(6), telnetd(8), login(1), curses(3), fcntl(2)
+
+BUGS
+       None known.
+
+joshk et al                                                   17 March 2004                                                DGAMELAUNCH(8)
