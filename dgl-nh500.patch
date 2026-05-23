@@ -73,7 +73,7 @@ diff -urB NetHack-5.0.0.bak/sys/unix/hints/linux.500 NetHack-5.0.0/sys/unix/hint
 -PREFIX=$(wildcard ~)/nh/install
 -HACKDIR=$(PREFIX)/games/lib/nethackdir
 -SHELLDIR = $(PREFIX)/games
-+PREFIX=(:chroot:)
++PREFIX=/.
 +HACKDIR=$(PREFIX)(:hackdir:)
 +SHELLDIR = $(PREFIX)
  VARDIRPERM = 0755
