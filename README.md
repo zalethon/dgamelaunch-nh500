@@ -156,3 +156,8 @@ sudo chown -R games:games /opt/dgamelaunch/var
 8) Modify the main menu (it might help to `dcss-menu.patch` to it)
 
 That's it!
+
+# ISSUES
+If you find a bug, report it, I guess.
+
+Known issues rn: watching other players doesn't work, at all! I haven't been able to track this down yet.
