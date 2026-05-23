@@ -1,27 +1,71 @@
 #!/bin/bash
 
+# install-dgl-nh500
+#
 # Script for setting up Debian DGL/NetHack 5.0.0 environment
 # (hopefully to also set up DCSS 0.34.1 too)
 #
 # You should run this as root.
 #
 # Should be run in the directory it was shipped in.
+#
+# Usage:
+# ./install-dgl-nh500 [options]
+#
+# OPTION [default]                    DESCRIPTION
+# --prefix <dir> [/opt/dgamelaunch]   DGL's chroot. All other locations are
+#                                     relative to this directory! And
+#                                     everything DGL or NetHack need to run
+#                                     is in this directory.
+
+# --var <dir> [/var]                  Location for mutable data. Organized a
+#                                     little strangely in that each game known
+#                                     to dgamelaunch has its own subdirectory,
+#                                     and dgamelaunch's data is just in here.
+
+# --etc <dir> [/etc]                  Location for immutable and config data.
+#                                     Ditto, each game has its own subdirectry.
+#                                     note that NetHack doesn't have one; all
+#                                     of its immutable data lives in hackdir.
+
+# --menudir <dir> [<etc>/menu]         Location for menu files. Really they can
+#                                     be anywhere, but this instructs the
+#                                     script where to put the default ones.
+
+# --hackdir <dir> [/opt/nh500]        NetHack is built wth this as its prefix.
+
+# --playground <dir> [/var/nh500]     NetHack is built with this as its
+#                                     'var playground.'
+
+# --dbfile <sqlite3 db> [<var>/dgamelaunch.db]   The location for the database.
+
+# --nano [FLAG]                       If you set the nano flag, nano will be
+#                                     installed in the chroot, for use as an
+#                                     editor. The default configuration
+#                                     assumes it is "built" with nano.
+
+# -q -s --quiet --silent [FLAG]       Causes autogen and make to run quietly.
+
 
 # Here are some settings which would cause nethack and dgl to be installed
 # in a way that reflects the setup instructions provided by Paxed...
 # for posterity and testing.
 #
-#CHROOT="/opt/nethack/nethack.alt.org"
-#DGLVAR="/dgldir"
-#DGLETC="/."
-#MENUDIR="$DGLETC"
-#HACKDIR="/nh500"
-#PLAYGROUND="/nh500/var"
+# CHROOT="/opt/nethack/nethack.alt.org"
+# DGLVAR="/dgldir"
+# DGLETC="/."
+# MENUDIR="$DGLETC"
+# HACKDIR="/nh500"
+# PLAYGROUND="/nh500/var"
 #
 # ./install-dgl-nh500 --prefix /opt/nethack/nethack.alt.org --var /dgldir --etc /. --menudir /. --hackdir /nh500 --playground /nh500/var
 
 while [[ $# -gt 0 ]]; do
   case $1 in
+    -h|--help|--usage|-?|--?)
+      printf "`sed -n '3,61p;61q' $0 | tr -d "#"`"
+      exit 0
+      ;;
     -q|-s|--quiet|--silent)
       QUIETMAKE=1
       shift
