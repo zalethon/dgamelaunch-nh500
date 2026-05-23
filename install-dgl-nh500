@@ -133,12 +133,15 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
+    --fetch-dgl)
+      FETCHDGL=1
     --)
       set --
       break
       ;;
     -*|--*)
       echo "Unknown option $1"
+      echo "Valid options are: --install-nh500, --nano, --quiet|--silent, --prefix <dir>, --var <dir>, --etc <dir>, --menudir <dir>, --hackdir <dir>, --playground <dir>"
       exit 1
       ;;
     *)
@@ -164,7 +167,7 @@ USRGRP="games:games"
 # and can't run without it.
 #
 # If you change this here, you will have to change it in <chroot>/etc/dgamelaunch.conf too.
-if [ -z CHROOT ]; then
+if [ -z $CHROOT ]; then
   CHROOT="/opt/dgamelaunch"
 fi
 
@@ -172,29 +175,29 @@ fi
 #
 # Each directory is within the chroot!
 #
-if [ -z DGLVAR ]; then
+if [ -z $DGLVAR ]; then
   DGLVAR="/var"
 fi
-if [ -z DGLETC ]; then
+if [ -z $DGLETC ]; then
   DGLETC="/etc"
 fi
-if [ -z MENUDIR ]; then
+if [ -z $MENUDIR ]; then
   MENUDIR="$DGLETC/menu"
 fi
 
 # The path of the sqlite db for users.
 # If this is left undefined (commented out), DGL will be built
 # without sqlite3. Also, it'll probably not work.
-if [ -z SQLITE_DBFILE ]; then
+if [ -z $SQLITE_DBFILE ]; then
   SQLITE_DBFILE="$DGLVAR/dgamelaunch.db"
 fi
 
 # These are baked into the patch files, so if you change them here,
 # change them there also.
-if [ -z HACKDIR ]; then
+if [ -z $HACKDIR ]; then
   HACKDIR="/opt/nh500"
 fi
-if [ -z PLAYGROUND ]; then
+if [ -z $PLAYGROUND ]; then
   PLAYGROUND="/var/nh500"
 fi
 
@@ -284,13 +287,12 @@ PATCH_ME="dgl-nh500.patch examples/dgamelaunch.conf"
 for i in $PATCH_ME; do
   cp $i $i.bak
 done
-sed -i -e "s/(:chroot:)/\/$CHROOT/g" "$PATCH_ME"
-sed -i -e "s/(:var:)/\/$DGLVAR/g" "$PATCH_ME"
-sed -i -e "s/(:etc:)/\/$DGLETC/g" "$PATCH_ME"
-sed -i -e "s/(:menudir:)/\/$MENUDIR/g" "$PATCH_ME"
-sed -i -e "s/(:hackdir:)/\/$HACKDIR/g" "$PATCH_ME"
-sed -i -e "s/(:playground:)/\/$PLAYGROUND/g" "$PATCH_ME"
-exit 0
+sed -i -e "s,(:chroot:),"/$CHROOT",g" $PATCH_ME
+sed -i -e "s,(:var:),"/$DGLVAR",g" $PATCH_ME
+sed -i -e "s,(:etc:),"/$DGLETC",g" $PATCH_ME
+sed -i -e "s,(:menudir:),"/$MENUDIR",g" $PATCH_ME
+sed -i -e "s,(:hackdir:),"/$HACKDIR",g" $PATCH_ME
+sed -i -e "s,(:playground:),"/$PLAYGROUND",g" $PATCH_ME
 
 ###############
 # Fetch, patch, build, install NetHack
@@ -403,15 +405,16 @@ fi
 cp "/$CURDIR/virus" bin
 
 # Copy NetHack and DGL
+# Remember: we are currently in $CHROOT
 if [ -n "$INSTALLNH" ]; then
   NHBINFILE="`basename /$NETHACKBIN`.`date +%Y%m%d`"
   LIBS="$LIBS `findlibs /$NETHACKBIN`"
   LHACKDIR="`echo "$HACKDIR" | awk -F/ 'BEGIN {OFS=FS} {NF-=1; print}'`"
   LPLAYGROUND="`echo "$PLAYGROUND" | awk -F/ 'BEGIN {OFS=FS} {NF-=1; print}'`"
-  cp -r "/$HACKDIR" "$LHACKDIR"
+  cp -r "/$HACKDIR" "./$LHACKDIR"
   cp "$NETHACKBIN" "$HACKDIR/$NHBINFILE"
   ln -s "/$HACKDIR/$NHBINFILE" bin/nh500
-  cp -r "/$PLAYGROUND" "$LPLAYGROUND"
+  cp -r "/$PLAYGROUND" "./$LPLAYGROUND"
   chown -R "$USRGRP" "$HACKDIR"
   chown -R "$USRGRP" "$PLAYGROUND"
 fi
@@ -461,7 +464,7 @@ fi
 
 # cleanup
 cd "/$WORKDIR"
-RM_ME="/opt/nh500 /var/nh500 NetHack-5.0.0 dgamelaunch.zip nethack-500-src.tgz"
+RM_ME="$HACKDIR $PLAYGROUND NetHack-5.0.0 dgamelaunch.zip nethack-500-src.tgz"
 if [ -n $INSTALLDGL ]; then
   RM_ME="$RM_ME dgamelaunch"
 fi
