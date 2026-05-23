@@ -240,12 +240,12 @@ PATCH_ME="dgl-nh500.patch examples/dgamelaunch.conf"
 for i in $PATCH_ME; do
   cp $i $i.bak
 done
-sed -i -e "s/(:chroot:)/$CHROOT/g" "$PATCH_ME"
-sed -i -e "s/(:var:)/$DGLVAR/g" "$PATCH_ME"
-sed -i -e "s/(:etc:)/$DGLETC/g" "$PATCH_ME"
-sed -i -e "s/(:menudir:)/$MENUDIR/g" "$PATCH_ME"
-sed -i -e "s/(:hackdir:)/$HACKDIR/g" "$PATCH_ME"
-sed -i -e "s/(:playground:)/$PLAYGROUND/g" "$PATCH_ME"
+sed -i -e "s/(:chroot:)/\/$CHROOT/g" "$PATCH_ME"
+sed -i -e "s/(:var:)/\/$DGLVAR/g" "$PATCH_ME"
+sed -i -e "s/(:etc:)/\/$DGLETC/g" "$PATCH_ME"
+sed -i -e "s/(:menudir:)/\/$MENUDIR/g" "$PATCH_ME"
+sed -i -e "s/(:hackdir:)/\/$HACKDIR/g" "$PATCH_ME"
+sed -i -e "s/(:playground:)/\/$PLAYGROUND/g" "$PATCH_ME"
 exit 0
 
 ###############
