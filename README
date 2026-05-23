@@ -40,7 +40,7 @@ adduser nethack
 And follow the prompts. Name the user whatever you like, and give bogus info for everything other than password.
 Now edit /etc/passwd. The new user's line will look like this:
 
-nethack:x:1001:1001:nethack,1,1,1,1:/home/nethack:/bin/bash
+nethack:x:<uid>:<gid>:nethack,1,1,1,1:/home/nethack:/bin/bash
 
 You need to modify the new user's line like so:
 
