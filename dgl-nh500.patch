@@ -15,7 +15,7 @@ diff -urB NetHack-5.0.0.bak/include/config.h NetHack-5.0.0/include/config.h
   */
  #ifndef HACKDIR
 -#define HACKDIR "/usr/games/lib/nethackdir"
-+#define HACKDIR "/opt/nh500"
++#define HACKDIR "(:hackdir:)"
  #endif
  
  /*
@@ -27,7 +27,7 @@ diff -urB NetHack-5.0.0.bak/include/unixconf.h NetHack-5.0.0/include/unixconf.h
   * system, define VAR_PLAYGROUND to be where the variable parts are kept.
   */
 -/* #define VAR_PLAYGROUND "/var/lib/games/nethack" */
-+#define VAR_PLAYGROUND "/var/nh500"
++#define VAR_PLAYGROUND "(:playground:)"
  
  /*
   * Define DEF_PAGER as your default pager, e.g. "/bin/cat" or "/usr/ucb/more"
@@ -73,8 +73,8 @@ diff -urB NetHack-5.0.0.bak/sys/unix/hints/linux.500 NetHack-5.0.0/sys/unix/hint
 -PREFIX=$(wildcard ~)/nh/install
 -HACKDIR=$(PREFIX)/games/lib/nethackdir
 -SHELLDIR = $(PREFIX)/games
-+PREFIX=/.
-+HACKDIR=$(PREFIX)/opt/nh500
++PREFIX=(:chroot:)
++HACKDIR=$(PREFIX)(:hackdir:)
 +SHELLDIR = $(PREFIX)
  VARDIRPERM = 0755
  VARFILEPERM = 0600
@@ -83,7 +83,7 @@ diff -urB NetHack-5.0.0.bak/sys/unix/hints/linux.500 NetHack-5.0.0/sys/unix/hint
  
  INSTDIR=$(HACKDIR)
 -VARDIR = $(HACKDIR)
-+VARDIR = $(PREFIX)/var/nh500
++VARDIR = $(PREFIX)(:playground:)
  
  ifdef MAKEFILE_TOP
  TESTGDBPATH=/usr/bin/gdb

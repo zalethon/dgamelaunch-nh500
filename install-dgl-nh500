@@ -7,6 +7,102 @@
 #
 # Should be run in the directory it was shipped in.
 
+# Here are some settings which would cause nethack and dgl to be installed
+# in a way that reflects the setup instructions provided by Paxed...
+# for posterity and testing.
+#
+#CHROOT="/opt/nethack/nethack.alt.org"
+#DGLVAR="/dgldir"
+#DGLETC="/."
+#MENUDIR="$DGLETC"
+#HACKDIR="/nh500"
+#PLAYGROUND="/nh500/var"
+#
+# ./install-dgl-nh500 --prefix /opt/nethack/nethack.alt.org --var /dgldir --etc /. --menudir /. --hackdir /nh500 --playground /nh500/var
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -q|-s|--quiet|--silent)
+      QUIETMAKE=1
+      shift
+      ;;
+    --prefix)
+      CHROOT="/${2#/}"
+      CHROOT="${CHROOT%/}"
+      shift
+      shift
+      ;;
+    --var)
+      DGLVAR="/${2#/}"
+      DGLVAR="${DGLVAR%/}"
+      shift
+      shift
+      ;;
+    --etc)
+      DGLETC="/${2#/}"
+      DGLETC="${CDGLETC%/}"
+      shift
+      shift
+      ;;
+    --menudir)
+      MENUDIR="/${2#/}"
+      MENUDIR="${MENUDIR%/}"
+      shift
+      shift
+      ;;
+    --hackdir)
+      HACKDIR="/${2#/}"
+      HACKDIR="${HACKDIR%/}"
+      shift
+      shift
+      ;;
+    --playground)
+      PLAYGROUND="/${2#/}"
+      PLAYGROUND="${PLAYGROUND%/}"
+      shift
+      shift
+      ;;
+    --dbfile)
+      SQLITE_DBFILE="/${2#/}"
+      SQLITE_DBFILE="${SQLITE_DBFILE%/}"
+      shift
+      shift
+      ;;
+    --nano)
+      DGLNANO="/${2#/}"
+      DGLNANO="${DGLNANO%/}"
+      shift
+      shift
+      ;;
+    # If you downloaded NetHack yourself, and have applied dgl-nh500.patch etc,
+    # then don't pass --install-h500.
+    # Know what you're doing, or look up a guide on installing NetHack!
+    --install-nh500)
+      # Disable if you already have NetHack-5.0.0 source downloaded and uncompressed.
+      FETCHNH=1
+      # Disable if you don't want to patch linux.500 and config.h to make life easy.
+      PATCHNH=1
+      # Disable if you already built NetHack-5.0.0 with your preferred settings!
+      BUILDNH=1
+      # Disable if you don't want NetHack to be installed in DGL's root.
+      INSTALLNH=1
+      shift
+      shift
+      ;;
+    --)
+      set --
+      break
+      ;;
+    -*|--*)
+      echo "Unknown option $1"
+      exit 1
+      ;;
+    *)
+      break # (treat this as $1)
+      ;;
+  esac
+done
+
 ## SETTINGS
 
 # Source repositories and checksums.
@@ -14,32 +110,6 @@
 NETHACK500=https://www.nethack.org/download/5.0.0/nethack-500-src.tgz
 NETHACKSHA256=2959b7886aac76185b90aea0c9f80d14343f604de0ae96b3dd2a760f7ab3bde9
 DGL=https://github.com/crawl/dgamelaunch/archive/455308b96fa7522c8c9873653401b4e0cf8f71e4.zip
-
-# If this thing ain't working, and you can't figure out why, try disabling
-# the -s flag to make by commenting out this line. It won't fix anything,
-# but there might be some tell-tale warnings or errors.
-QUIETMAKE=1
-
-# If you downloaded NetHack yourself, and have applied dgl-nh500.patch etc,
-# then comment these lines out to skip fetching/patching.
-# Skipping patch step also skips running <nh-src>/sys/unix/setup.sh;
-# so know what you're doing, or look up a guide on installing NetHack!
-
-# Disable if you already have NetHack-5.0.0 source downloaded and uncompressed.
-FETCHNH=1
-# Disable if you don't want to patch linux.500 and config.h to make life easy.
-PATCHNH=1
-# Disable if you already built NetHack-5.0.0 with your preferred settings!
-BUILDNH=1
-# Disable if you don't want NetHack to be installed in DGL's root.
-INSTALLNH=1
-
-# If you got this script already bundled with DGL, this should already be
-# disabled.
-#FETCHDGL=1
-
-# Install nano in chroot/bin
-DGLNANO=1
 
 # Configuration options for DGL.
 # User and group for NetHack and DGL.
@@ -50,25 +120,39 @@ USRGRP="games:games"
 # and can't run without it.
 #
 # If you change this here, you will have to change it in <chroot>/etc/dgamelaunch.conf too.
-CHROOT="/opt/dgamelaunch"
+if [ -z CHROOT ]; then
+  CHROOT="/opt/dgamelaunch"
+fi
 
 # In theory these would help keep dgamelaunch organized within its own environment.
 #
 # Each directory is within the chroot!
 #
-DGLVAR="/var"
-DGLETC="/etc"
-MENUDIR="$DGLETC/menu"
+if [ -z DGLVAR ]; then
+  DGLVAR="/var"
+fi
+if [ -z DGLETC ]; then
+  DGLETC="/etc"
+fi
+if [ -z MENUDIR ]; then
+  MENUDIR="$DGLETC/menu"
+fi
 
 # The path of the sqlite db for users.
 # If this is left undefined (commented out), DGL will be built
 # without sqlite3. Also, it'll probably not work.
- SQLITE_DBFILE="$DGLVAR/dgamelaunch.db"
+if [ -z SQLITE_DBFILE ]; then
+  SQLITE_DBFILE="$DGLVAR/dgamelaunch.db"
+fi
 
 # These are baked into the patch files, so if you change them here,
 # change them there also.
-HACKDIR="/opt/nh500"
-PLAYGROUND="/var/nh500"
+if [ -z HACKDIR ]; then
+  HACKDIR="/opt/nh500"
+fi
+if [ -z PLAYGROUND ]; then
+  PLAYGROUND="/var/nh500"
+fi
 
 # These are set in the NetHack Makefile, and possibly config.h
 # Note: the Makefile only appears after you run:
@@ -81,17 +165,6 @@ GREPBIN="/bin/grep"
 WORKDIR="`pwd`"
 NETHACKBIN="$HACKDIR/nethack"
 
-# Here are some settings which would cause nethack and dgl to be installed
-# in a way that reflects the setup instructions provided by Paxed...
-# for posterity mostly. If you uncomment these, you will have to also modify
-# some of the patch files, and dgamelaunch.conf.
-#
-#CHROOT="/opt/nethack/nethack.alt.org"
-#DGLVAR="/dgldir"
-#DGLETC="/."
-#MENUDIR="$DGLETC"
-#HACKDIR="/nh500"
-#PLAYGROUND="/nh500/var"
 
 
 ################
@@ -157,10 +230,24 @@ WORKDIR=`standdir $WORKDIR`
 # dgl-create-chroot script.
 
 set -e
+
 if [ -n "$QUIETMAKE" ]; then
   MAKEFLAGS="-s"
   AUTOGENFLAGS="-q"
 fi
+
+PATCH_ME="dgl-nh500.patch examples/dgamelaunch.conf"
+for i in $PATCH_ME; do
+  cp $i $i.bak
+done
+sed -i -e "s/(:chroot:)/$CHROOT/g" "$PATCH_ME"
+sed -i -e "s/(:var:)/$DGLVAR/g" "$PATCH_ME"
+sed -i -e "s/(:etc:)/$DGLETC/g" "$PATCH_ME"
+sed -i -e "s/(:menudir:)/$MENUDIR/g" "$PATCH_ME"
+sed -i -e "s/(:hackdir:)/$HACKDIR/g" "$PATCH_ME"
+sed -i -e "s/(:playground:)/$PLAYGROUND/g" "$PATCH_ME"
+exit 0
+
 ###############
 # Fetch, patch, build, install NetHack
 if [ -n "$FETCHNH" ]; then
@@ -192,7 +279,7 @@ fi
 cd "/$WORKDIR"
 
 ###################################
-# Patch, build, install dgamelaunch
+# Patch, build, install dgamelaunch -- pretty much never used, since this is packaged with dgamelaunch. Unmaintained.
 if [ -n "$FETCHDGL" ]; then
   wget -O dgamelaunch.zip ${DGL}
   unzip -q dgamelaunch.zip
