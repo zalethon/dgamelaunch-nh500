@@ -56,12 +56,6 @@ CHROOT="/opt/dgamelaunch"
 #
 # Each directory is within the chroot!
 #
-# In practice, I haven't figured out what breaks -- I suspect something to do
-# with the database -- but they must just be left alone.
-#
-#DGLVAR="/dgldir"
-#DGLETC="/."
-#MENUDIR="$DGLETC"
 DGLVAR="/var"
 DGLETC="/etc"
 MENUDIR="$DGLETC/menu"
@@ -86,6 +80,19 @@ GREPBIN="/bin/grep"
 # DON'T CHANGE THESE
 WORKDIR="`pwd`"
 NETHACKBIN="$HACKDIR/nethack"
+
+# Here are some settings which would cause nethack and dgl to be installed
+# in a way that reflects the setup instructions provided by Paxed...
+# for posterity mostly. If you uncomment these, you will have to also modify
+# some of the patch files, and dgamelaunch.conf.
+#
+#CHROOT="/opt/nethack/nethack.alt.org"
+#DGLVAR="/dgldir"
+#DGLETC="/."
+#MENUDIR="$DGLETC"
+#HACKDIR="/nh500"
+#PLAYGROUND="/nh500/var"
+
 
 ################
 # Some functions
@@ -138,7 +145,6 @@ DGLVAR=`standdir $DGLVAR`
 DGLETC=`standdir $DGLETC`
 MENUDIR=`standdir $MENUDIR`
 SQLITE_DBFILE=`standdir $SQLITE_DBFILE`
-echo "SQLITE_DBFILE: '$SQLITE_DBFILE'"
 HACKDIR=`standdir $HACKDIR`
 PLAYGROUND=`standdir $PLAYGROUND`
 COMPRESSBIN=`standdir $COMPRESSBIN`
