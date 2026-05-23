@@ -1,0 +1,68 @@
+#!/bin/bash
+
+set -e
+
+## All of these were written for dgl-create-chroot
+# findlibs from original dgl-create-chroot
+findlibs()
+{
+  for i in "$@"; do
+    if [ -z "`ldd "$i" | grep 'not a dynamic executable'`" ]; then
+      echo $(ldd "$i" | awk '{ print $3 }' | egrep -v ^'\(')
+      echo $(ldd "$i" | grep 'ld-linux' | awk '{print $1}')
+    fi
+  done
+}
+
+# cpbin refactored out of original dgl-create-chroot
+fcpbin()
+{
+  USEBIN=`which $1`
+  if [ -e "$USEBIN" ]; then
+    NEWDIR=`dirname $USEBIN`
+    echo "Copying $USEBIN to $CHROOT$NEWDIR"
+    mkdir -p "$CHROOT$NEWDIR"
+    cp "$USEBIN" "$CHROOT$NEWDIR/"
+    if [ -n LIBS ]; then
+      LIBS="$LIBS `findlibs $USEBIN`"
+    fi
+    if [ -z LIBS ]; then
+      LIBS="`findlibs $USEBIN`"
+    fi
+  fi
+}
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -b|--BIN)
+      BIN="${2#/}"
+      BIN="${BIN%/}"
+      shift
+      shift
+      ;;
+    --)
+      set --
+      break
+      ;;
+    -*|--*)
+      echo "Unknown option $1"
+      exit 1
+      ;;
+    *)
+      break # (treat this as $1)
+      ;;
+  esac
+done
+CHROOT="${2#/}"
+CHROOT="${CHROOT%/}"
+
+fcpbin $1
+
+# This also taken from dgl-create-chroot
+if [ -n LIBS ]; then
+  LIBS=`for lib in $LIBS; do echo $lib; done | sort | uniq`
+  for lib in $LIBS; do
+    mkdir -p "$CHROOT`dirname $lib`"
+    cp $lib "$CHROOT$lib"
+  done
+fi

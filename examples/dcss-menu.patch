@@ -1,0 +1,22 @@
+--- etc/menu/dgl_menu_main_user.txt	2026-05-23 03:23:17.068407766 -0400
++++ /home/skye/work/dgl_menu_main_user.txt.new	2026-05-23 14:08:42.392080402 -0400
+@@ -8,13 +8,16 @@
+ 
+  Logged in as: $USERNAME
+ 
+- c) Change password
++ s) Change password
+  e) Change email address
+  w) Watch games in progress
+- o) Edit options (Virus)
+- O) Edit options (Nano)
++ o) Edit NetHack rc (Virus)
++ O) Edit NetHack rc (Nano)
+  p) Play NetHack 5.0.0 (curses)
+  P) Play NetHack 5.0.0 (tty)
++ i) Edit Crawl rc (Virus)
++ I) Edit Crawl rc (Nano)
++ c) Play Dungeon Crawl Stone Soup 0.34.1
+  q) Quit
+ 
+  =>
