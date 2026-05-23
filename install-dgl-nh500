@@ -44,6 +44,10 @@
 #                                     editor. The default configuration
 #                                     assumes it is "built" with nano.
 
+# --without-nh500 [FLAG]              If you set without-nh500, the script will
+#                                     not install NetHack. Know what you're
+#                                     doing!
+
 # -q -s --quiet --silent [FLAG]       Causes autogen and make to run quietly.
 
 
@@ -63,7 +67,7 @@
 while [[ $# -gt 0 ]]; do
   case $1 in
     -h|--help|--usage|-?|--?)
-      printf "`sed -n '3,61p;61q' $0 | tr -d "#"`"
+      printf "`sed -n '3,65p;65q' $0 | tr -d "#"`"
       exit 0
       ;;
     -q|-s|--quiet|--silent)
@@ -118,23 +122,14 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
-    # If you downloaded NetHack yourself, and have applied dgl-nh500.patch etc,
-    # then don't pass --install-h500.
     # Know what you're doing, or look up a guide on installing NetHack!
-    --install-nh500)
-      # Disable if you already have NetHack-5.0.0 source downloaded and uncompressed.
-      FETCHNH=1
-      # Disable if you don't want to patch linux.500 and config.h to make life easy.
-      PATCHNH=1
-      # Disable if you already built NetHack-5.0.0 with your preferred settings!
-      BUILDNH=1
-      # Disable if you don't want NetHack to be installed in DGL's root.
-      INSTALLNH=1
-      shift
+    --without-nh500)
+      NONH=1
       shift
       ;;
     --fetch-dgl)
       FETCHDGL=1
+      ;;
     --)
       set --
       break
@@ -199,6 +194,16 @@ if [ -z $HACKDIR ]; then
 fi
 if [ -z $PLAYGROUND ]; then
   PLAYGROUND="/var/nh500"
+fi
+if [ -n $NONH ]; then
+  # Disable if you already have NetHack-5.0.0 source downloaded and uncompressed.
+  FETCHNH=1
+  # Disable if you don't want to patch linux.500 and config.h to make life easy.
+  PATCHNH=1
+  # Disable if you already built NetHack-5.0.0 with your preferred settings!
+  BUILDNH=1
+  # Disable if you don't want NetHack to be installed in DGL's root.
+  INSTALLNH=1
 fi
 
 # These are set in the NetHack Makefile, and possibly config.h
