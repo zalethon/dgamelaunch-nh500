@@ -1,6 +1,9 @@
 The main feature of this fork of dgamelaunch is install-dgl-nh500, which automates installation of NetHack inside
 a dgamelaunch chroot.
 
+# TODO
+Next: patch dgamelaunch w/ changes made by Paxed after crawl's branch origin (commit 3d0812c January 29th, 2011)
+
 # install-dgl-nh500 documentation
 ```bash
 # install-dgl-nh500
