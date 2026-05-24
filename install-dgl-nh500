@@ -285,6 +285,9 @@ if [ -n "$QUIETMAKE" ]; then
   MAKEFLAGS="-s"
   AUTOGENFLAGS="-q"
 fi
+if [ -z "$QUIETMAKE" ]; then
+  PATCHFLAGS="--verbose"
+fi
 
 PATCH_ME="dgl-nh500.patch examples/dgamelaunch.conf"
 for i in $PATCH_ME; do
@@ -314,12 +317,12 @@ if [ -n "$PATCHNH" -o -n "$BUILDNH" -o -n "$INSTALLNH" ]; then
   cd NetHack-5.0.0
 fi
 if [ -n "$PATCHNH" ]; then
-  patch -p1 --verbose < "/$WORKDIR/dgl-nh500.patch"
+  patch -p1 $PATCHFLAGS < "/$WORKDIR/dgl-nh500.patch"
   sys/unix/setup.sh sys/unix/hints/linux.500
 fi
 if [ -n "$BUILDNH" ]; then
   make $MAKEFLAGS fetch-lua
-  echo "NOTE: btw, don't worry about these git messages. git doesn't matter."
+  [ -n "$QUIETMAKE" ] && echo "NOTE: btw, don't worry about these git messages. git doesn't matter."
   make $MAKEFLAGS all
 fi
 if [ -n "$INSTALLNH" ]; then
@@ -335,7 +338,7 @@ if [ -n "$FETCHDGL" ]; then
   dglmess="dgamelaunch-`echo "${DGL}" | awk -F/ '{ print $7 }' | awk -F. '{ print $1 }'`"
   mv "$dglmess" dgamelaunch
   cd dgamelaunch
-  patch -p1 --verbose < "/$WORKDIR/dgl.patch"
+  patch -p1 $PATCHFLAGS < "/$WORKDIR/dgl.patch"
 fi
 
 autoupdate
