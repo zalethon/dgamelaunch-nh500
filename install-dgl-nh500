@@ -162,18 +162,19 @@ USRGRP="games:games"
 #
 # If you change this here, you will have to change it in <chroot>/etc/dgamelaunch.conf too.
 if [ -z "$CHROOT" ]; then
-  CHROOT="/opt/dgamelaunch"
+  CHROOT="opt/dgamelaunch"
 fi
 
 # In theory these would help keep dgamelaunch organized within its own environment.
 #
 # Each directory is within the chroot!
-#
+
+# AKA dgldir
 if [ -z "$DGLVAR" ]; then
-  DGLVAR="/var"
+  DGLVAR="var"
 fi
 if [ -z "$DGLETC" ]; then
-  DGLETC="/etc"
+  DGLETC="etc"
 fi
 if [ -z "$MENUDIR" ]; then
   MENUDIR="$DGLETC/menu"
@@ -186,10 +187,10 @@ if [ -z "$SQLITE_DBFILE" ]; then
   SQLITE_DBFILE="$DGLVAR/dgamelaunch.db"
 fi
 if [ -z "$HACKDIR" ]; then
-  HACKDIR="/opt/nh500"
+  HACKDIR="opt/nh500"
 fi
 if [ -z "$PLAYGROUND" ]; then
-  PLAYGROUND="/var/nh500"
+  PLAYGROUND="var/nh500"
 fi
 if [ -z "$NONH" ]; then
   # Disable if you already have NetHack-5.0.0 source downloaded and uncompressed.
@@ -205,8 +206,8 @@ fi
 # Note: the Makefile only appears after you run:
 # sys/unix/setup.sh sys/unix/hints/linux.500
 # from inside the NetHack source directory.
-COMPRESSBIN="/bin/gzip"
-GREPBIN="/bin/grep"
+COMPRESSBIN="bin/gzip"
+GREPBIN="bin/grep"
 
 # DON'T CHANGE THESE
 WORKDIR="`pwd`"
@@ -256,7 +257,9 @@ cpbin()
     echo "Copying $1 to `pwd`/$NEWDIR"
     mkdir -p "$NEWDIR"
     cp "`which $1`" "$NEWDIR/"
-    LIBS="$LIBS `findlibs $1`"
+    TMP="`findlibs $1`"
+    echo "Queuing libs for copying: $TMP"
+    LIBS="$LIBS $TMP"
   fi
 }
 
@@ -423,6 +426,8 @@ DGLFILE="dgamelaunch.`date +%Y%m%d`"
 LIBS="$LIBS `findlibs /$CURDIR/dgamelaunch`"
 cp "/$CURDIR/dgamelaunch" "bin/$DGLFILE"
 ln -s "$DGLFILE" bin/dgamelaunch
+# IMPORTANT -- see bug in TODO
+ln -s "$DGLFILE" ./dgamelaunch
 
 # Creating sqlite db
 if [ -n "$SQLITE_DBFILE" ]; then
@@ -432,6 +437,7 @@ fi
 
 # Copying libraries
 LIBS=`for lib in $LIBS; do echo $lib; done | sort | uniq`
+echo "Copying the following libraries: $LIBS"
 for lib in $LIBS; do
   mkdir -p "/$CHROOT`dirname $lib`"
   cp $lib "/$CHROOT$lib"
@@ -464,9 +470,15 @@ fi
 
 # cleanup
 cd "/$WORKDIR"
-RM_ME="/$HACKDIR /$PLAYGROUND NetHack-5.0.0 dgamelaunch.zip nethack-500-src.tgz"
+RM_ME="/$HACKDIR /$PLAYGROUND /nethack NetHack-5.0.0 nethack-500-src.tgz* dgl-nh500.patch examples/dgamelaunch.conf"
+MV_ME="dgl-nh500.patch.bak examples/dgamelaunch.conf.bak configure.ac~ configure~"
+for file in $MV_ME; do
+  fileorig=${file%.bak}
+  fileorig=${fileorig%\~}
+  mv -f $file $fileorig
+done
 if [ -n "$INSTALLDGL" ]; then
-  RM_ME="$RM_ME dgamelaunch"
+  RM_ME="$RM_ME dgamelaunch dgamelaunch.zip"
 fi
 rm -rf $RM_ME
 
