@@ -133,6 +133,8 @@ Congrats on your new server...
 
 More resources for troubleshooting vis NetHack:
 https://nethackwiki.com/wiki/User:Paxed/HowTo_setup_dgamelaunch
+Vis dgamelaunch and crawl:
+https://github.com/tarballqc/dcss-server-install/
 
 
 # Dungeon Crawl Stone Soup
