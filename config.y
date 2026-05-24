@@ -50,15 +50,17 @@ static int sortmode_number(const char *sortmode_name) {
 }
 
 %token TYPE_SUSER TYPE_SGROUP TYPE_SGID TYPE_SUID TYPE_MAX TYPE_MAXNICKLEN
-%token TYPE_GAME_SHORT_NAME TYPE_WATCH_SORTMODE TYPE_SERVER_ID
-%token TYPE_ALLOW_REGISTRATION TYPE_WATCH_COLUMNS
+%token TYPE_GAME_SHORT_NAME TYPE_WATCH_SORTMODE TYPE_BANNERVARS
+%token TYPE_ALLOW_REGISTRATION TYPE_WATCH_COLUMNS TYPE_GAME_ID
 %token TYPE_PATH_GAME TYPE_NAME_GAME TYPE_PATH_DGLDIR TYPE_PATH_SPOOL
 %token TYPE_PATH_BANNER TYPE_PATH_CANNED TYPE_PATH_CHROOT
 %token TYPE_PATH_PASSWD TYPE_PATH_LOCKFILE TYPE_PATH_TTYREC
 %token TYPE_MALSTRING TYPE_PATH_INPROGRESS TYPE_GAME_ARGS TYPE_RC_FMT
 %token TYPE_CMDQUEUE TYPE_DEFINE_MENU TYPE_BANNER_FILE TYPE_CURSOR
+%token TYPE_POSTCMDQUEUE TYPE_TIMEFORMAT
 %token TYPE_MAX_IDLE_TIME TYPE_MENU_MAX_IDLE_TIME TYPE_EXTRA_INFO_FILE
-%token TYPE_ENCODING
+%token TYPE_ENCODING TYPE_LOCALE TYPE_UTF8ESC TYPE_FILEMODE TYPE_DEFTERM
+%token TYPE_FLOWCTRL
 %token <s> TYPE_VALUE
 %token <i> TYPE_NUMBER TYPE_CMDQUEUENAME
 %type  <kt> KeyType
@@ -139,7 +141,7 @@ KeyPair: TYPE_CMDQUEUE '[' TYPE_CMDQUEUENAME ']'
       if (!strcmp($3, "root"))
       {
         fprintf(stderr, "%s:%d: I refuse to run as root! Aborting.\n", config, line);
-	graceful_exit(1);
+	graceful_exit(8);
       }
       globalconfig.shed_user = strdup($3);
       if ((usr = getpwnam($3)) != NULL)
@@ -154,7 +156,7 @@ KeyPair: TYPE_CMDQUEUE '[' TYPE_CMDQUEUENAME ']'
 	else
 	{
 	  fprintf(stderr, "%s:%d: I refuse to run as %s (uid 0!) Aborting.\n", config, line, $3);
-	  graceful_exit(1);
+	  graceful_exit(9);
 	}
       }
       else
@@ -180,11 +182,6 @@ KeyPair: TYPE_CMDQUEUE '[' TYPE_CMDQUEUENAME ']'
       }
       break;
 
-  case TYPE_SERVER_ID:
-      if (globalconfig.server_id) free(globalconfig.server_id);
-      globalconfig.server_id = strdup($3);
-      break;
-
     case TYPE_PATH_DGLDIR:
       if (globalconfig.dglroot) free(globalconfig.dglroot);
       globalconfig.dglroot = strdup($3);
@@ -205,6 +202,20 @@ KeyPair: TYPE_CMDQUEUE '[' TYPE_CMDQUEUENAME ']'
       globalconfig.passwd = strdup($3);
       break;
 
+    case TYPE_LOCALE:
+      if (globalconfig.locale) free(globalconfig.locale);
+      globalconfig.locale = strdup($3);
+      break;
+
+    case TYPE_DEFTERM:
+      if (globalconfig.defterm) free(globalconfig.defterm);
+      globalconfig.defterm = strdup($3);
+      break;
+
+    case TYPE_FILEMODE:
+      default_fmode = strtoul($3, NULL, 8);
+      break;
+
     default:
       fprintf(stderr, "%s:%d: token %s does not take a string, bailing out\n",
         config, line, lookup_token($1));
@@ -220,9 +231,15 @@ KeyPair: TYPE_CMDQUEUE '[' TYPE_CMDQUEUENAME ']'
 	    case TYPE_ALLOW_REGISTRATION:
 		globalconfig.allow_registration = $<i>3;
 		break;
+	    case TYPE_UTF8ESC:
+		globalconfig.utf8esc = $<i>3;
+		break;
+	    case TYPE_FLOWCTRL:
+		globalconfig.flowctrl = $<i>3;
+		break;
 	    default:
 		fprintf(stderr, "%s:%d: token %s does not take a boolean, bailing out\n",
-			config, line, lookup_token($1));
+			config, line, lookup_token($1)); 
 		exit(1);
 	    }
   	}
@@ -239,7 +256,7 @@ KeyPair: TYPE_CMDQUEUE '[' TYPE_CMDQUEUENAME ']'
       if ($3 == 0)
       {
         fprintf(stderr, "%s:%d: I refuse to run as uid 0 (root)! Aborting.\n", config, line);
-        graceful_exit(1);
+        graceful_exit(11);
       }
 
       globalconfig.shed_uid = $3;
@@ -271,10 +288,13 @@ KeyPair: TYPE_CMDQUEUE '[' TYPE_CMDQUEUENAME ']'
 
     default:
       fprintf(stderr, "%s:%d: token %s does not take a number, bailing out\n",
-        config, line, lookup_token($1));
+        config, line, lookup_token($1)); 
       exit(1);
   }
 }
+	| TYPE_BANNERVARS '=' '[' banner_vars ']'
+	{
+	}
 	| TYPE_WATCH_COLUMNS '=' '[' watch_columns ']' {
             memcpy(globalconfig.watch_columns,
                    curr_watch_columns,
@@ -284,6 +304,18 @@ KeyPair: TYPE_CMDQUEUE '[' TYPE_CMDQUEUENAME ']'
             curr_n_watch_columns = 0;
           };
 
+
+banner_vars : banner_vars ',' banner_var
+	| banner_var;
+
+banner_var : TYPE_VALUE '=' TYPE_VALUE
+	{
+	    banner_var_add($1, $3, 0);
+	}
+	| TYPE_VALUE '=' TYPE_TIMEFORMAT '(' TYPE_VALUE ')'
+	{
+	    banner_var_add($1, $5, 1);
+	};
 
 watch_columns: watch_columns ',' watch_column
                | watch_column;
@@ -405,12 +437,26 @@ game_definition : TYPE_CMDQUEUE
 	    myconfig[ncnf]->cmdqueue = curr_cmdqueue;
 	    curr_cmdqueue = NULL;
 	}
+	| TYPE_POSTCMDQUEUE
+	{
+	    if (myconfig[ncnf]->postcmdqueue) {
+		fprintf(stderr, "%s:%d: postcommand queue defined twice, bailing out\n",
+			config, line);
+		exit(1);
+	    }
+	}
+	'=' cmdlist
+	{
+	    myconfig[ncnf]->postcmdqueue = curr_cmdqueue;
+	    curr_cmdqueue = NULL;
+	}
+
 	| TYPE_GAME_ARGS '=' game_args_list
 	{
 	    /* nothing */
 	}
-        | TYPE_EXTRA_INFO_FILE '=' TYPE_VALUE
-        {
+	| TYPE_EXTRA_INFO_FILE '=' TYPE_VALUE
+	{
             myconfig[ncnf]->extra_info_file = strdup($3);
         }
         | TYPE_MAX_IDLE_TIME '=' TYPE_NUMBER
@@ -448,6 +494,11 @@ game_definition : TYPE_CMDQUEUE
 	    case TYPE_GAME_SHORT_NAME:
 		if (myconfig[ncnf]->shortname) free (myconfig[ncnf]->shortname);
 		myconfig[ncnf]->shortname = strdup($3);
+		break;
+
+	    case TYPE_GAME_ID:
+		if (myconfig[ncnf]->game_id) free (myconfig[ncnf]->game_id);
+		myconfig[ncnf]->game_id = strdup($3);
 		break;
 
 	    case TYPE_RC_FMT:
@@ -529,6 +580,8 @@ definegame : TYPE_DEFINE_GAME '{'
 	}
 	game_definitions '}'
 	{
+	    if (myconfig[ncnf]->game_id == NULL && myconfig[ncnf]->shortname)
+		myconfig[ncnf]->game_id = strdup(myconfig[ncnf]->shortname);
 	    ncnf++;
 	    num_games = ncnf;
 	}
@@ -598,6 +651,7 @@ KeyType : TYPE_SUSER	{ $$ = TYPE_SUSER; }
 	| TYPE_PATH_GAME	{ $$ = TYPE_PATH_GAME; }
         | TYPE_NAME_GAME        { $$ = TYPE_NAME_GAME; }
 	| TYPE_GAME_SHORT_NAME	{ $$ = TYPE_GAME_SHORT_NAME; }
+	| TYPE_GAME_ID	{ $$ = TYPE_GAME_ID; }
 	| TYPE_PATH_DGLDIR	{ $$ = TYPE_PATH_DGLDIR; }
 	| TYPE_PATH_SPOOL	{ $$ = TYPE_PATH_SPOOL; }
 	| TYPE_PATH_BANNER	{ $$ = TYPE_PATH_BANNER; }
@@ -607,9 +661,13 @@ KeyType : TYPE_SUSER	{ $$ = TYPE_SUSER; }
 	| TYPE_PATH_LOCKFILE	{ $$ = TYPE_PATH_LOCKFILE; }
 	| TYPE_PATH_INPROGRESS	{ $$ = TYPE_PATH_INPROGRESS; }
 	| TYPE_ENCODING         { $$ = TYPE_ENCODING; }
+	| TYPE_LOCALE		{ $$ = TYPE_LOCALE; }
+	| TYPE_DEFTERM		{ $$ = TYPE_DEFTERM; }
+	| TYPE_UTF8ESC		{ $$ = TYPE_UTF8ESC; }
+	| TYPE_FLOWCTRL		{ $$ = TYPE_FLOWCTRL; }
 	| TYPE_RC_FMT		{ $$ = TYPE_RC_FMT; }
 	| TYPE_WATCH_SORTMODE	{ $$ = TYPE_WATCH_SORTMODE; }
-	| TYPE_SERVER_ID	{ $$ = TYPE_SERVER_ID; }
+	| TYPE_FILEMODE		{ $$ = TYPE_FILEMODE; }
 	;
 
 %%
@@ -630,6 +688,7 @@ const char* lookup_token (int t)
     case TYPE_NAME_GAME: return "game_name";
     case TYPE_ALLOW_REGISTRATION: return "allow_new_nicks";
     case TYPE_GAME_SHORT_NAME: return "short_name";
+    case TYPE_GAME_ID: return "game_id";
     case TYPE_PATH_DGLDIR: return "dglroot";
     case TYPE_PATH_SPOOL: return "spooldir";
     case TYPE_PATH_BANNER: return "banner";
@@ -641,7 +700,12 @@ const char* lookup_token (int t)
     case TYPE_RC_FMT: return "rc_fmt";
     case TYPE_WATCH_SORTMODE: return "sortmode";
     case TYPE_WATCH_COLUMNS: return "watch_columns";
-    case TYPE_SERVER_ID: return "server_id";
+    case TYPE_BANNERVARS: return "bannervars";
+    case TYPE_LOCALE: return "locale";
+    case TYPE_DEFTERM: return "default_term";
+    case TYPE_UTF8ESC: return "utf8esc";
+    case TYPE_FLOWCTRL: return "flowcontrol";
+    case TYPE_FILEMODE: return "filemode";
     default: abort();
   }
 }

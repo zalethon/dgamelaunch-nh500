@@ -66,14 +66,14 @@
 # include <sqlite3.h>
 #endif
 
-#ifndef __FreeBSD__
-# ifdef __APPLE__
-#  include <unistd.h>
-# else
-#  include <crypt.h>
-# endif
-#else
+#if defined(__FreeBSD__)
 # include <libutil.h>
+#elif defined(__NetBSD__)
+# include <util.h>
+#elif defined(__APPLE__)
+# include <unistd.h>
+#else
+# include <crypt.h>
 #endif
 
 #ifdef __linux__
@@ -113,15 +113,34 @@ struct dg_user *me = NULL;
 struct dg_banner banner;
 
 static struct dg_watchcols default_watchcols[] = {
-    {0, SORTMODE_NONE,        1, "", "%s)"},
-    {1, SORTMODE_USERNAME,    4, "Username", "%-15s"},
-    {2, SORTMODE_GAMENUM,    21, "Game", "%-5s"},
-    {3, SORTMODE_WINDOWSIZE, 28, " Size", "%s"},
-    {4, SORTMODE_STARTTIME,  37, "Start date & time", "%s"},
-    {5, SORTMODE_IDLETIME,   58, "Idle time", "%-10s"},
+    {SORTMODE_NONE, SORTMODE_NONE,        1, "", "%s)"},
+    {SORTMODE_USERNAME, SORTMODE_USERNAME,    4, "Username", "%-15s"},
+    {SORTMODE_GAMENUM, SORTMODE_GAMENUM,    21, "Game", "%-5s"},
+    {SORTMODE_WINDOWSIZE, SORTMODE_WINDOWSIZE, 28, " Size", "%s"},
+    {SORTMODE_STARTTIME, SORTMODE_STARTTIME,  37, "Start date & time", "%s"},
+    {SORTMODE_IDLETIME, SORTMODE_IDLETIME,   58, "Idle time", "%-10s"},
 #ifdef USE_SHMEM
-    {6, SORTMODE_WATCHERS,   70, "Watchers", "%s"},
+    {SORTMODE_WATCHERS, SORTMODE_WATCHERS,   70, "Watchers", "%s"},
 #endif
+};
+
+int color_remap[16] = {
+    COLOR_PAIR(9) | A_NORMAL,
+    COLOR_PAIR(COLOR_BLUE) | A_NORMAL,
+    COLOR_PAIR(COLOR_GREEN) | A_NORMAL,
+    COLOR_PAIR(COLOR_CYAN) | A_NORMAL,
+    COLOR_PAIR(COLOR_RED) | A_NORMAL,
+    COLOR_PAIR(COLOR_MAGENTA) | A_NORMAL,
+    COLOR_PAIR(COLOR_YELLOW) | A_NORMAL,
+    COLOR_PAIR(COLOR_BLACK) | A_NORMAL,
+    COLOR_PAIR(10) | A_BOLD,
+    COLOR_PAIR(COLOR_BLUE) | A_BOLD,
+    COLOR_PAIR(COLOR_GREEN) | A_BOLD,
+    COLOR_PAIR(COLOR_CYAN) | A_BOLD,
+    COLOR_PAIR(COLOR_RED) | A_BOLD,
+    COLOR_PAIR(COLOR_MAGENTA) | A_BOLD,
+    COLOR_PAIR(COLOR_YELLOW) | A_BOLD,
+    COLOR_PAIR(COLOR_WHITE) | A_BOLD,
 };
 
 static struct dg_watchcols *default_watchcols_list[DGL_MAXWATCHCOLS + 1];
@@ -176,7 +195,7 @@ ttyrec_getpty ()
 #ifdef HAVE_OPENPTY
     if (openpty (&master, &slave, NULL, NULL, NULL) == -1) {
 	debug_write("cannot openpty");
-	graceful_exit (62);
+	graceful_exit (61);
     }
 #else
     if ((master = open ("/dev/ptmx", O_RDWR)) < 0) {
@@ -330,7 +349,7 @@ catch_sighup (int signum)
   signals_release();
 #endif
   debug_write("catchup sighup");
-  graceful_exit (2);
+  graceful_exit (7);
 }
 
 /* ************************************************************* */
@@ -370,23 +389,23 @@ idle_alarm_reset(void)
 
 /* ************************************************************* */
 
+
 char *
-bannerstrmangle(char *buf, char *fromstr, char *tostr)
+bannerstrmangle(char *buf, char *bufnew, int buflen, char *fromstr, char *tostr)
 {
-    static char bufnew[81];
     char *loc;
     char *b = buf;
 
-    memset (bufnew, 0, 80);
+    memset (bufnew, 0, buflen);
 
     if (strstr(b, fromstr)) {
 	int i = 0;
 	while ((loc = strstr (b, fromstr)) != NULL) {
-	    for (; i < 80; i++) {
+	    for (; i < buflen; i++) {
 		if (loc != b)
 		    bufnew[i] = *(b++);
 		else {
-		    strlcat (bufnew, tostr, 80);
+		    strlcat (bufnew, tostr, buflen);
 		    b += strlen(fromstr);
 		    i += strlen(tostr);
 		    break;
@@ -398,10 +417,63 @@ bannerstrmangle(char *buf, char *fromstr, char *tostr)
 	}
 
 	if (*b)
-	    strlcat(bufnew, b, 80);
-    } else strncpy(bufnew, buf, 80);
-
+	    strlcat(bufnew, b, buflen);
+    } else strncpy(bufnew, buf, buflen);
     return bufnew;
+}
+
+void
+banner_var_add(char *name, char *value, int special)
+{
+    struct dg_banner_var *tmp = (struct dg_banner_var *)malloc(sizeof(struct dg_banner_var));
+
+    if (!tmp) return;
+
+    tmp->name = strdup(name);
+    tmp->value = strdup(value);
+    tmp->special = special;
+    tmp->next = globalconfig.banner_var_list;
+    globalconfig.banner_var_list = tmp;
+}
+
+void
+banner_var_free()
+{
+    struct dg_banner_var *tmp;
+    struct dg_banner_var *bv = globalconfig.banner_var_list;
+    while (bv) {
+	tmp = bv->next;
+	free(bv->name);
+	free(bv->value);
+	free(bv);
+	bv = tmp;
+    }
+    globalconfig.banner_var_list = NULL;
+}
+
+char *
+banner_var_resolve(struct dg_banner_var *bv)
+{
+  static char tmpbuf[DGL_BANNER_LINELEN+1];
+  time_t tstamp;
+  struct tm *ptm;
+  if (!bv) return NULL;
+  if (!bv->special) return bv->value;
+  time(&tstamp);
+  ptm = gmtime(&tstamp);
+  strftime(tmpbuf, DGL_BANNER_LINELEN, bv->value, ptm);
+  return tmpbuf;
+}
+
+char *
+banner_var_value(char *name)
+{
+    struct dg_banner_var *bv = globalconfig.banner_var_list;
+    while (bv) {
+	if (!strcmp(bv->name, name)) return banner_var_resolve(bv);
+	bv = bv->next;
+    }
+    return NULL;
 }
 
 void
@@ -427,8 +499,8 @@ banner_addline(struct dg_banner *ban, char *line)
     if (!ban) return;
     ban->len++;
     ban->lines = realloc (ban->lines, sizeof (char *) * ban->len);
-    if (len >= 80) {
-	len = 80;
+    if (len >= DGL_BANNER_LINELEN) {
+	len = DGL_BANNER_LINELEN;
 	ban->lines[ban->len - 1] = malloc(len);
 	strncpy(ban->lines[ban->len - 1], line, len);
 	ban->lines[ban->len - 1][len-1] = '\0';
@@ -440,10 +512,10 @@ void
 loadbanner (char *fname, struct dg_banner *ban)
 {
   FILE *bannerfile;
-  char buf[80];
+  char buf[DGL_BANNER_LINELEN+1];
   if (ban->len > 23) return;
 
-  memset (buf, 0, 80);
+  memset (buf, 0, DGL_BANNER_LINELEN);
 
   bannerfile = fopen (fname, "r");
 
@@ -451,44 +523,48 @@ loadbanner (char *fname, struct dg_banner *ban)
     {
 	if (ban->len == 0)
 	    banner_addline(ban, "### dgamelaunch " PACKAGE_VERSION " - network console game launcher");
-	snprintf(buf, 80, "### NOTE: administrator has not installed a %s file", fname);
+	snprintf(buf, DGL_BANNER_LINELEN, "### NOTE: administrator has not installed a %s file", fname);
 	banner_addline(ban, buf);
 	return;
     }
 
-  while (fgets (buf, 80, bannerfile) != NULL)
+  while (fgets (buf, DGL_BANNER_LINELEN, bannerfile) != NULL)
     {
-      char bufnew[80];
+      char bufnew[DGL_BANNER_LINELEN+1];
       int slen;
 
-      memset (bufnew, 0, 80);
+      memset (bufnew, 0, DGL_BANNER_LINELEN);
 
       slen = strlen(buf);
       if ((slen > 0) && (buf[slen-1] == '\n')) buf[slen-1] = '\0';
 
-      strncpy(bufnew, buf, 80);
+      strncpy(bufnew, buf, DGL_BANNER_LINELEN);
       if (strstr(bufnew, "$INCLUDE(")) {
 	  char *fn = bufnew + 9;
 	  char *fn_end = strchr(fn, ')');
 	  if (fn_end) {
 	      *fn_end = '\0';
 	      if (strcmp(fname, fn)) {
-		  // banner_addline(ban, fn);
 		  loadbanner(fn, ban);
 	      }
 	  }
       } else {
-	  strncpy(bufnew, bannerstrmangle(bufnew, "$VERSION", PACKAGE_STRING), 80);
-	  strncpy(bufnew, bannerstrmangle(bufnew, "$SERVERID", globalconfig.server_id ? globalconfig.server_id : ""), 80);
+	  char tmpbufnew[DGL_BANNER_LINELEN+1];
+	  struct dg_banner_var *bv = globalconfig.banner_var_list;
+	  while (bv) {
+	      strncpy(bufnew, bannerstrmangle(bufnew, tmpbufnew, DGL_BANNER_LINELEN, bv->name, banner_var_resolve(bv)), DGL_BANNER_LINELEN);
+	      bv = bv->next;
+	  }
+	  strncpy(bufnew, bannerstrmangle(bufnew, tmpbufnew, DGL_BANNER_LINELEN, "$VERSION", PACKAGE_STRING), DGL_BANNER_LINELEN);
 	  if (me && loggedin) {
-	      strncpy(bufnew, bannerstrmangle(bufnew, "$USERNAME", me->username), 80);
+	      strncpy(bufnew, bannerstrmangle(bufnew, tmpbufnew, DGL_BANNER_LINELEN, "$USERNAME", me->username), DGL_BANNER_LINELEN);
 	  } else {
-	      strncpy(bufnew, bannerstrmangle(bufnew, "$USERNAME", "[Anonymous]"), 80);
+	      strncpy(bufnew, bannerstrmangle(bufnew, tmpbufnew, DGL_BANNER_LINELEN, "$USERNAME", "[Anonymous]"), DGL_BANNER_LINELEN);
 	  }
 	  banner_addline(ban, bufnew);
       }
 
-      memset (buf, 0, 80);
+      memset (buf, 0, DGL_BANNER_LINELEN);
 
       if (ban->len >= 24)
 	  break;
@@ -498,17 +574,74 @@ loadbanner (char *fname, struct dg_banner *ban)
 }
 
 void
-drawbanner (struct dg_banner *ban, unsigned int start_line, unsigned int howmany)
+drawbanner (struct dg_banner *ban)
 {
   unsigned int i;
+  char *tmpch, *tmpch2, *splch;
+  int attr = 0, oattr = 0;
 
   if (!ban) return;
 
-  if (howmany > ban->len || howmany == 0)
-    howmany = ban->len;
+  for (i = 0; i < ban->len; i++) {
+      char *tmpbuf = strdup(ban->lines[i]);
+      char *tmpbuf2 = tmpbuf;
+      int ok = 0;
+      int x = 1;
+      do {
+	  ok = 0;
+	  if ((tmpch = strstr(tmpbuf2, "$ATTR("))) {
+	      if ((tmpch2 = strstr(tmpch, ")"))) {
+		  int spl = 0;
+		  char *nxttmpch;
+		  ok = 1;
+		  oattr = attr;
+		  attr = A_NORMAL;
+		  *tmpch = *tmpch2 = '\0';
+		  tmpch += 6;
+		  nxttmpch = tmpch;
+		  do {
+		      spl = 0;
+		      splch = strchr(tmpch, ';');
+		      if (splch && *splch) {
+			  spl = 1;
+			  nxttmpch = splch;
+			  *nxttmpch = '\0';
+			  nxttmpch++;
+		      }
+		      if (tmpch && *tmpch) {
+			  switch (*tmpch) {
+			  default: break;
+			  case '0': case '1': case '2': case '3': case '4':
+			  case '5': case '6': case '7': case '8': case '9':
+			      {
+				  int num = atoi(tmpch);
+				  if (num >= 0 && num <= 15)
+				      attr |= color_remap[num];
+			      }
+			      break;
+			  case 'b': attr |= A_BOLD; break;
+			  case 's': attr |= A_STANDOUT; break;
+			  case 'u': attr |= A_UNDERLINE; break;
+			  case 'r': attr |= A_REVERSE; break;
+			  case 'd': attr |= A_DIM; break;
+			  }
+		      } else attr = A_NORMAL;
+		      tmpch = nxttmpch;
+		  } while (spl);
 
-  for (i = 0; i < howmany; i++)
-    mvaddstr (start_line + i, 1, ban->lines[i]);
+		  mvaddstr(1 + i, x, tmpbuf2);
+		  if (oattr) attroff(oattr);
+		  if (attr) attron(attr);
+		  x += strlen(tmpbuf2);
+		  tmpch2++;
+		  tmpbuf2 = tmpch2;
+	      } else
+		  mvaddstr (1 + i, x, tmpbuf2);
+	  } else
+	      mvaddstr (1 + i, x, tmpbuf2);
+      } while (ok);
+      free(tmpbuf);
+  }
 }
 
 void
@@ -540,6 +673,7 @@ shm_update(struct dg_shm *shm_dg_data, struct dg_game **games, int len)
     int di, i;
     struct dg_shm_game *shm_dg_game = (struct dg_shm_game *)(shm_dg_data + sizeof(struct dg_shm));
 
+    signals_block();
     shm_sem_wait(shm_dg_data);
 
     for (di = 0; di < shm_dg_data->max_n_games; di++)
@@ -578,6 +712,7 @@ shm_update(struct dg_shm *shm_dg_data, struct dg_game **games, int len)
     }
 
     shm_sem_post(shm_dg_data);
+    signals_release();
 #endif
 }
 
@@ -585,11 +720,11 @@ void
 shm_mk_keys(key_t *shm_key, key_t *shm_sem_key)
 {
 #ifdef USE_SHMEM
-    if ((*shm_key = ftok("dgamelaunch", 'R')) == -1) {
+    if ((*shm_key = ftok(globalconfig.passwd, 'R')) == -1) {
 	debug_write("ftok shm_key");
 	graceful_exit(71);
     }
-    if ((*shm_sem_key = ftok("dgamelaunch", 'S')) == -1) {
+    if ((*shm_sem_key = ftok(globalconfig.passwd, 'S')) == -1) {
 	debug_write("ftok shm_sem_key");
 	graceful_exit(72);
     }
@@ -761,6 +896,34 @@ sortmode_increment(struct dg_watchcols **watchcols,
         *sortmode = old_sortmode;
 }
 
+char *
+get_timediff(time_t ctime, long seconds)
+{
+    static char data[32];
+    long secs, mins, hours;
+
+    secs = (ctime - seconds);
+
+    if (showplayers) {
+	snprintf(data, 10, "%ld", secs);
+	return data;
+    }
+
+    hours = (secs / 3600);
+    secs -= (hours * 3600);
+    mins = (secs / 60) % 60;
+    secs -= (mins*60);
+    if (hours)
+	snprintf(data, 10, "%ldh %ldm", hours, mins);
+    else if (mins)
+	snprintf(data, 10, "%ldm %lds", mins, secs);
+    else if (secs > 4)
+	snprintf(data, 30, "%lds", secs);
+    else
+	snprintf(data, 10, " ");
+    return data;
+}
+
 static
 void
 game_get_column_data(struct dg_game *game,
@@ -904,7 +1067,7 @@ inprogressmenu (int gameid)
         offset = 0;
 
       erase ();
-      drawbanner (&banner, 1, 1);
+      drawbanner (&banner);
 
       if (len > 0) {
 	  while (offset >= len) { offset -= max_height; }
@@ -922,6 +1085,7 @@ inprogressmenu (int gameid)
 	  }
       }
 
+      signals_block();
       shm_sem_wait(shm_dg_data);
 
       (void) time(&ctime);
@@ -955,6 +1119,7 @@ inprogressmenu (int gameid)
         }
 
       shm_sem_post(shm_dg_data);
+      signals_release();
 
       btm = dgl_local_LINES-btm_banner_hei-top_banner_hei;
       if (len <= max_height)
@@ -964,8 +1129,8 @@ inprogressmenu (int gameid)
 	  mvprintw ((btm+top_banner_hei), 1, "(%d-%d of %d)", offset + 1, offset + i, len);
 	  mvaddstr ((btm+2+top_banner_hei), 1, "Watch which game? ('?' for help) => ");
       } else {
-	  mvprintw(top_banner_hei, 1,"Sorry, no games available for viewing.");
-	  mvaddstr((2+top_banner_hei), 1, "Press 'q' to return to the main menu.");
+	  mvprintw(top_banner_hei,4,"Sorry, no games available for viewing.");
+	  mvaddstr((btm+2+top_banner_hei), 1, "Press 'q' to return, or '?' for help => ");
       }
 
       refresh ();
@@ -1046,11 +1211,7 @@ inprogressmenu (int gameid)
 	case ERR:
 	case 'q': case 'Q':
         case '\x1b':
-	    free_populated_games(games, len);
-#ifdef USE_SHMEM
-	    shmdt(shm_dg_data);
-#endif
-          return;
+	    goto leavewatchgame;
 	case KEY_RIGHT:
 	case '.':
             sortmode_increment(watchcols, &sortmode, 1);
@@ -1061,7 +1222,7 @@ inprogressmenu (int gameid)
 	    break;
 
 	case 12: case 18: /* ^L, ^R */
-	  write(1, "\033%G", 3);
+          if (globalconfig.utf8esc) (void) write(1, "\033%G", 3);
 	  clear ();
 	  break;
 
@@ -1090,7 +1251,8 @@ inprogressmenu (int gameid)
 		  break;
 	      } else selected = idx;
 watchgame:
-
+	      if (!(idx >= 0 && idx < len && games[idx] && games[idx]->name))
+		  goto leavewatchgame;
               /* valid choice has been made */
               chosen_name = strdup (games[idx]->name);
               snprintf (ttyrecname, 130, "%s",
@@ -1099,7 +1261,7 @@ watchgame:
               clear ();
               refresh ();
               endwin ();
-              write(1, "\033%G", 3);
+	      if (globalconfig.utf8esc) (void) write(1, "\033%G", 3);
 #ifdef USE_SHMEM
 	      signals_block();
 	      if (games[idx]->is_in_shm) {
@@ -1164,6 +1326,7 @@ watchgame:
 	  selectedgame = NULL;
       }
     }
+leavewatchgame:
   free_populated_games(games, len);
 #ifdef USE_SHMEM
   shmdt(shm_dg_data);
@@ -1196,6 +1359,7 @@ inprogressdisplay (int gameid)
   shm_update(shm_dg_data, games, len);
   games = sort_games (games, len, sortmode);
 
+  signals_block();
   shm_sem_wait(shm_dg_data);
 
   (void) time(&ctime);
@@ -1220,6 +1384,7 @@ inprogressdisplay (int gameid)
   }
 
   shm_sem_post(shm_dg_data);
+  signals_release();
 
   free_populated_games(games, len);
 
@@ -1279,7 +1444,7 @@ change_email ()
   clear();
 
   if (me->flags & DGLACCT_EMAIL_LOCK) {
-      drawbanner(&banner, 1, 1);
+      drawbanner(&banner);
       mvprintw(5, 1, "Sorry, you cannot change the email.--More--");
       dgl_getch();
       return;
@@ -1287,7 +1452,7 @@ change_email ()
 
   for (;;)
   {
-      drawbanner(&banner, 1,1);
+      drawbanner(&banner);
 
     mvprintw(3, 1, "Your current email is: %s", me->email);
     mvaddstr(4, 1, "Please enter a new one (max 80 chars; blank line aborts)");
@@ -1415,7 +1580,7 @@ changepw (int dowrite)
 
   if (me->flags & DGLACCT_PASSWD_LOCK) {
       clear();
-      drawbanner(&banner, 1, 1);
+      drawbanner(&banner);
       mvprintw(5, 1, "Sorry, you cannot change the password.--More--");
       dgl_getch();
       return 0;
@@ -1426,7 +1591,7 @@ changepw (int dowrite)
       char repeatbuf[DGL_PASSWDLEN+1];
       clear ();
 
-      drawbanner (&banner, 1, 1);
+      drawbanner (&banner);
 
       mvprintw (5, 1,
                 "Please enter a%s password. Remember that this is sent over the net",
@@ -1564,11 +1729,11 @@ domailuser (char *username)
 
   /* print the enter your message line */
   clear ();
-  drawbanner (&banner, 1, 1);
+  drawbanner (&banner);
   mvprintw (5, 1,
             "Enter your message here. It is to be one line only and %i characters or less.",
 	    DGL_MAILMSGLEN);
-  mvaddstr (7, 1, "");
+  mvaddstr (7, 1, "=> ");
 
   if (mygetnstr (message, DGL_MAILMSGLEN, 1) != OK)
       return;
@@ -1629,7 +1794,7 @@ domailuser (char *username)
   mvaddstr (9, 1, "Scroll delivered!         ");
   move(9, 19); /* Pedantry! */
   refresh ();
-  sleep (1);
+  sleep (2);
 
   return;
 }
@@ -1670,7 +1835,13 @@ void
 initcurses ()
 {
   printf("\033[2J");
-  initscr ();
+  if (newterm(NULL, stdout, stdin) == NULL) {
+      if (!globalconfig.defterm || (newterm(globalconfig.defterm, stdout, stdin) == NULL)) {
+	  debug_write("cannot create newterm");
+	  graceful_exit(60);
+      }
+      mysetenv("TERM", globalconfig.defterm, 1);
+  }
   cbreak ();
   noecho ();
   nonl ();
@@ -1679,10 +1850,21 @@ initcurses ()
 #ifdef USE_NCURSES_COLOR
   start_color();
   use_default_colors();
-  init_pair(1, -1, -1);
-  init_pair(2, COLOR_RED, -1);
+
+  init_pair(COLOR_BLACK, COLOR_WHITE, COLOR_BLACK);
+  init_pair(COLOR_RED, COLOR_RED, COLOR_BLACK);
+  init_pair(COLOR_GREEN, COLOR_GREEN, COLOR_BLACK);
+  init_pair(COLOR_YELLOW, COLOR_YELLOW, COLOR_BLACK);
+  init_pair(COLOR_BLUE, COLOR_BLUE, COLOR_BLACK);
+  init_pair(COLOR_MAGENTA, COLOR_MAGENTA, COLOR_BLACK);
+  init_pair(COLOR_CYAN, COLOR_CYAN, COLOR_BLACK);
+  init_pair(COLOR_WHITE, COLOR_WHITE, COLOR_BLACK);
+  init_pair(9, 0, COLOR_BLACK);
+  init_pair(10, COLOR_BLACK, COLOR_BLACK);
+  init_pair(11, -1, -1);
+
+  if (globalconfig.utf8esc) (void) write(1, "\033%G", 3);
 #endif
-  write(1, "\033%G", 3);
   clear();
   refresh();
 }
@@ -1716,7 +1898,7 @@ loginprompt (int from_ttyplay)
     {
       clear ();
 
-      drawbanner (&banner, 1, 1);
+      drawbanner (&banner);
 
       if (from_ttyplay == 1)
 	mvaddstr (4, 1, "This operation requires you to be logged in.");
@@ -1752,7 +1934,7 @@ loginprompt (int from_ttyplay)
 
   clear ();
 
-  drawbanner (&banner, 1, 1);
+  drawbanner (&banner);
 
   mvaddstr (5, 1, "Please enter your password.");
   mvaddstr (7, 1, "=> ");
@@ -1806,7 +1988,7 @@ newuser ()
   {
       clear ();
 
-      drawbanner (&banner, 1, 1);
+      drawbanner (&banner);
 
       mvaddstr (5, 1, "Sorry, too many users have registered now.");
       mvaddstr (6, 1, "You might email the server administrator.");
@@ -1828,7 +2010,7 @@ newuser ()
 
       sprintf(buf, "%i character max.", globalconfig.max_newnick_len);
 
-      drawbanner (&banner, 1, 1);
+      drawbanner (&banner);
 
       mvaddstr (5, 1, "Welcome new user. Please enter a username.");
       mvaddstr (6, 1,
@@ -1896,7 +2078,7 @@ newuser ()
     {
       clear ();
 
-      drawbanner (&banner, 1, 1);
+      drawbanner (&banner);
 
       mvaddstr (5, 1, "Please enter your email address.");
       mvaddstr (6, 1, "This is sent _nowhere_ but will be used if you ask"
@@ -1975,7 +2157,7 @@ readfile (int nolock)
   fl.l_start = 0;
   fl.l_len = 0;
 
-  memset (buf, 1024, 0);
+  memset (buf, 0, 1024);
 
   /* read new stuff */
 
@@ -1988,7 +2170,7 @@ readfile (int nolock)
       }
       if (fcntl (fileno (fpl), F_SETLKW, &fl) == -1) {
 	  debug_write("cannot fcntl lockfile");
-        graceful_exit (114);
+        graceful_exit (95);
       }
     }
 
@@ -2064,7 +2246,7 @@ readfile (int nolock)
           b++;
           if ((b - n) >= 1024) {
 	      debug_write("env field too long");
-            graceful_exit (102);
+            graceful_exit (103);
 	  }
         }
 
@@ -2153,19 +2335,21 @@ userexist (char *cname, int isnew)
     char *qbuf;
 
     char tmpbuf[DGL_PLAYERNAMELEN+2];
+
+    memset(tmpbuf, 0, DGL_PLAYERNAMELEN+2);
     strncpy(tmpbuf, cname, (isnew ? globalconfig.max_newnick_len : DGL_PLAYERNAMELEN));
 
     /* Check that the nick doesn't interfere with already registered nicks */
     if (isnew && (strlen(cname) >= globalconfig.max_newnick_len))
 	strcat(tmpbuf, "%");
 
-    qbuf = sqlite3_mprintf("select * from dglusers where username like '%q' limit 1", tmpbuf);
+    qbuf = sqlite3_mprintf("select * from dglusers where username = '%q' collate nocase limit 1", tmpbuf);
 
-    ret = sqlite3_open(USE_SQLITE_DB, &db); /* FIXME: use globalconfig->passwd? */
+    ret = sqlite3_open(globalconfig.passwd, &db);
     if (ret) {
 	sqlite3_close(db);
 	debug_write("sqlite3_open failed");
-	graceful_exit(109);
+	graceful_exit(96);
     }
 
     if (userexist_tmp_me) {
@@ -2286,7 +2470,7 @@ writefile (int requirenew)
     {
 	signals_release();
       debug_write("passwd file fopen failed");
-      graceful_exit (104);
+      graceful_exit (99);
     }
 
   for (i = 0; i < f_num; i++)
@@ -2349,11 +2533,11 @@ writefile (int requirenew)
 	qbuf = sqlite3_mprintf("update dglusers set username='%q', email='%q', env='%q', password='%q', flags=%li where id=%i", me->username, me->email, me->env, me->password, me->flags, me->id);
     }
 
-    ret = sqlite3_open(USE_SQLITE_DB, &db); /* FIXME: use globalconfig->passwd? */
+    ret = sqlite3_open(globalconfig.passwd, &db);
     if (ret) {
 	sqlite3_close(db);
 	debug_write("writefile sqlite3_open failed");
-	graceful_exit(107);
+	graceful_exit(97);
     }
 
     sqlite3_busy_timeout(db, 10000);
@@ -2364,7 +2548,7 @@ writefile (int requirenew)
     if (ret != SQLITE_OK) {
 	sqlite3_close(db);
 	debug_write("writefile sqlite3_exec failed");
-	graceful_exit(106);
+	graceful_exit(98);
     }
     sqlite3_close(db);
 }
@@ -2433,7 +2617,7 @@ purge_stale_locks (int game)
       if (firsttime)
       {
 	clear ();
-	drawbanner (&banner, 1, 1);
+	drawbanner (&banner);
 
 #define HUP_WAIT 10 /* seconds before HUPPING */
 	mvprintw (3, 1,
@@ -2520,16 +2704,15 @@ runmenuloop(struct dg_menu *menu)
     ban.lines = NULL;
     ban.len = 0;
 
-    idle_alarm_set_enabled(1);
     loadbanner(menu->banner_fn, &ban);
     while (1) {
 	term_resize_check();
 	if (doclear) {
 	    doclear = 0;
-	    write(1, "\033%G", 3);
+	    if (globalconfig.utf8esc) (void) write(1, "\033%G", 3);
 	    clear();
 	}
-	drawbanner(&ban, 1, 0);
+	drawbanner(&ban);
 	if (menu->cursor_x >= 0 && menu->cursor_y >= 0)
 	    mvprintw(menu->cursor_y, menu->cursor_x, "");
 	refresh();
@@ -2693,6 +2876,12 @@ main (int argc, char** argv)
   signal (SIGTERM, catch_sighup);
 
   (void) tcgetattr (0, &tt);
+
+  if (!globalconfig.flowctrl) {
+      tt.c_iflag &= ~(IXON | IXOFF | IXANY); /* Disable XON/XOFF */
+      (void) tcsetattr(0, TCSANOW, &tt);
+  }
+
   if (-1 == ioctl (0, TIOCGWINSZ, (char *) &win) || win.ws_row < 4 ||
 		  win.ws_col < 4) /* Rudimentary validity check */
     {
@@ -2728,36 +2917,38 @@ main (int argc, char** argv)
       if (chroot (globalconfig.chroot))
 	{
 	  perror ("cannot change root directory");
-	  graceful_exit (1);
+	  graceful_exit (2);
 	}
 
       if (chdir ("/"))
 	{
 	  perror ("cannot chdir to root directory");
-	  graceful_exit (1);
+	  graceful_exit (3);
 	}
 
       /* shed privs. this is done immediately after chroot. */
       if (setgroups (1, &globalconfig.shed_gid) == -1)
 	{
 	  perror ("setgroups");
-	  graceful_exit (1);
+	  graceful_exit (4);
 	}
 
       if (setgid (globalconfig.shed_gid) == -1)
 	{
 	  perror ("setgid");
-	  graceful_exit (1);
+	  graceful_exit (5);
 	}
 
       if (setuid (globalconfig.shed_uid) == -1)
 	{
 	  perror ("setuid");
-	  graceful_exit (1);
+	  graceful_exit (6);
 	}
     }
 
-  setlocale(LC_CTYPE, "en_US.UTF-8");
+  if (globalconfig.locale) {
+      setlocale(LC_CTYPE, globalconfig.locale);
+  }
 
   if (showplayers) {
     inprogressdisplay(-1);
@@ -2799,7 +2990,7 @@ main (int argc, char** argv)
 	  }
 	  else {
 		fprintf(stdout, "Setup of %s failed.\n", p);
-		graceful_exit(1);
+		graceful_exit(10);
 	  }
   }
 
@@ -2850,8 +3041,8 @@ main (int argc, char** argv)
     free (me);
 
   freebanner(&banner);
-
-  graceful_exit (1);
+  banner_var_free();
+  graceful_exit (20);
 
   return 1;
 }
