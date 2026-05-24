@@ -39,7 +39,7 @@
 
 # --dbfile <sqlite3 db> [<var>/dgamelaunch.db]   The location for the database.
 
-# --nano [FLAG]                       If you set the nano flag, nano will be
+# --without-nano [FLAG]               If you do not set this flag, nano will be
 #                                     installed in the chroot, for use as an
 #                                     editor. The default configuration
 #                                     assumes it is "built" with nano.
@@ -116,10 +116,8 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
-    --nano)
-      DGLNANO="/${2#/}"
-      DGLNANO="${DGLNANO%/}"
-      shift
+    --without-nano)
+      NONANO=1
       shift
       ;;
     # Know what you're doing, or look up a guide on installing NetHack!
@@ -129,6 +127,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --fetch-dgl)
       FETCHDGL=1
+      shift
       ;;
     --)
       set --
@@ -136,7 +135,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     -*|--*)
       echo "Unknown option $1"
-      echo "Valid options are: --install-nh500, --nano, --quiet|--silent, --prefix <dir>, --var <dir>, --etc <dir>, --menudir <dir>, --hackdir <dir>, --playground <dir>"
+      echo "Try --help"
       exit 1
       ;;
     *)
@@ -162,7 +161,7 @@ USRGRP="games:games"
 # and can't run without it.
 #
 # If you change this here, you will have to change it in <chroot>/etc/dgamelaunch.conf too.
-if [ -z $CHROOT ]; then
+if [ -z "$CHROOT" ]; then
   CHROOT="/opt/dgamelaunch"
 fi
 
@@ -170,32 +169,29 @@ fi
 #
 # Each directory is within the chroot!
 #
-if [ -z $DGLVAR ]; then
+if [ -z "$DGLVAR" ]; then
   DGLVAR="/var"
 fi
-if [ -z $DGLETC ]; then
+if [ -z "$DGLETC" ]; then
   DGLETC="/etc"
 fi
-if [ -z $MENUDIR ]; then
+if [ -z "$MENUDIR" ]; then
   MENUDIR="$DGLETC/menu"
 fi
 
 # The path of the sqlite db for users.
 # If this is left undefined (commented out), DGL will be built
 # without sqlite3. Also, it'll probably not work.
-if [ -z $SQLITE_DBFILE ]; then
+if [ -z "$SQLITE_DBFILE" ]; then
   SQLITE_DBFILE="$DGLVAR/dgamelaunch.db"
 fi
-
-# These are baked into the patch files, so if you change them here,
-# change them there also.
-if [ -z $HACKDIR ]; then
+if [ -z "$HACKDIR" ]; then
   HACKDIR="/opt/nh500"
 fi
-if [ -z $PLAYGROUND ]; then
+if [ -z "$PLAYGROUND" ]; then
   PLAYGROUND="/var/nh500"
 fi
-if [ -n $NONH ]; then
+if [ -z "$NONH" ]; then
   # Disable if you already have NetHack-5.0.0 source downloaded and uncompressed.
   FETCHNH=1
   # Disable if you don't want to patch linux.500 and config.h to make life easy.
@@ -205,7 +201,6 @@ if [ -n $NONH ]; then
   # Disable if you don't want NetHack to be installed in DGL's root.
   INSTALLNH=1
 fi
-
 # These are set in the NetHack Makefile, and possibly config.h
 # Note: the Makefile only appears after you run:
 # sys/unix/setup.sh sys/unix/hints/linux.500
@@ -404,8 +399,8 @@ chmod go+r "$MENUDIR/dgl_menu_main_anon.txt" "$MENUDIR/dgl_menu_main_user.txt" "
 # Copy extraneous binaries to /bin
 cpbin /$COMPRESSBIN
 cpbin /$GREPBIN
-if [ -n "$DGLNANO" ]; then
-  cpbin /bin/nano
+if [ -z "$NONANO" ]; then
+  cpbin "`which nano`"
 fi
 cp "/$CURDIR/virus" bin
 
@@ -469,8 +464,8 @@ fi
 
 # cleanup
 cd "/$WORKDIR"
-RM_ME="$HACKDIR $PLAYGROUND NetHack-5.0.0 dgamelaunch.zip nethack-500-src.tgz"
-if [ -n $INSTALLDGL ]; then
+RM_ME="/$HACKDIR /$PLAYGROUND NetHack-5.0.0 dgamelaunch.zip nethack-500-src.tgz"
+if [ -n "$INSTALLDGL" ]; then
   RM_ME="$RM_ME dgamelaunch"
 fi
 rm -rf $RM_ME
