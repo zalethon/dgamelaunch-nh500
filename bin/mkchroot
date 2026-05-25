@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# No help available. Soz.
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -h|--help|--usage|-?|--?)
+      printf "`sed -n '3,3p;3q' $0 | tr -d "#"`"
+      exit 0
+      ;;
+    --)
+      set --
+      break
+      ;;
+    -*|--*)
+      echo "Unknown option $1"
+      echo "Try --help"
+      exit 1
+      ;;
+  esac
+done
+
+set -e
+umask 022
+
+chroot=${1%/}
+chroot=/${input#/}
+
+[[ -e "/$CHROOT" ]] && exit 1
