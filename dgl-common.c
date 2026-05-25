@@ -23,32 +23,22 @@ extern void (*g_chain_winch)(int);
 /* Data structures */
 struct dg_config **myconfig = NULL;
 struct dg_config defconfig = {
-    /* chroot = */ /*"/var/lib/dgamelaunch/",*/
   /* game_path = */ "/bin/nethack",
   /* game_name = */ "NetHack",
+  /* game_id = */ NULL,
   /* shortname = */ "NH",
-  /* chdir = */ /*NULL,*/
-  /* mkdir = */ /*NULL,*/
-  /* dglroot = *//*  "/dgldir/",*/
-  /* lockfile = */ /*"/dgl-lock",*/
-  /* passwd = */ /*"/dgl-login",*/
-  /* banner = */ /*"/dgl-banner",*/
   /* rcfile = */ NULL, /*"/dgl-default-rcfile",*/
+  /* ttyrecdir =*/ "%ruserdata/%n/ttyrec/",
   /* spool = */ "/var/mail/",
-  /* shed_user = */ /*"games",*/
-  /* shed_group = */ /*"games",*/
-  /* shed_uid = *//* 5,*/
-  /* shed_gid = */ /*60,*/ /* games:games in Debian */
-  /* max = */ /*64000,*/
-  /* savefilefmt = */ /*"",*/ /* don't do this by default */
   /* inprogressdir = */ "%rinprogress/",
-  NULL,
   /* num_args = */ 0,
   /* bin_args = */ NULL,
   /* rc_fmt = */ "%rrcfiles/%n.nethackrc", /* [dglroot]rcfiles/[username].nethackrc */
   /* cmdqueue = */ NULL,
+  /* postcmdqueue = */ NULL,
   /* max_idle_time = */ 0,
-  /* extra_info_file = */ NULL
+  /* extra_info_file = */ NULL,
+  /* encoding */ 0
 };
 
 char* config = NULL;
@@ -82,11 +72,13 @@ term_resize_check()
 {
     if ((COLS == dgl_local_COLS) && (LINES == dgl_local_LINES) && !curses_resize) return;
 
+    signal(SIGWINCH, SIG_IGN);
     endwin();
     initcurses();
     dgl_local_COLS = COLS;
     dgl_local_LINES = LINES;
     curses_resize = 0;
+    signal(SIGWINCH, sigwinch_func);
 }
 
 int
@@ -118,6 +110,7 @@ dgl_find_menu(char *menuname)
  * %r == chroot (string)  (aka "dglroot" config var)
  * %g == game name
  * %s == short game name
+ * %t == ttyrec file (full path&name) of the last game played.
  */
 char *
 dgl_format_str(int game, struct dg_user *me, char *str, char *plrname)
@@ -125,6 +118,7 @@ dgl_format_str(int game, struct dg_user *me, char *str, char *plrname)
     static char buf[1024];
     char *f, *p, *end;
     int ispercent = 0;
+    int isbackslash = 0;
 
     if (!str) return NULL;
 
@@ -171,16 +165,38 @@ dgl_format_str(int game, struct dg_user *me, char *str, char *plrname)
 		while (*p != '\0')
 		    p++;
 		break;
+	    case 't':
+		snprintf (p, end + 1 - p, "%s", last_ttyrec);
+		while (*p != '\0')
+		    p++;
+		break;
   	    default:
 		*p = *f;
 		if (p < end)
 		    p++;
 	    }
 	    ispercent = 0;
+	} else if (isbackslash) {
+	    switch (*f) {
+	    case 'a': *p = '\007'; break;
+	    case 'b': *p = '\010'; break;
+	    case 't': *p = '\011'; break;
+	    case 'n': *p = '\012'; break;
+	    case 'v': *p = '\013'; break;
+	    case 'f': *p = '\014'; break;
+	    case 'r': *p = '\015'; break;
+	    case 'e': *p = '\033'; break;
+	    default:  *p = *f;
+	    }
+	    if (p < end)
+		p++;
+	    isbackslash = 0;
 	} else {
-	    if (*f == '%')
+	    if (*f == '%') {
 		ispercent = 1;
-	    else {
+	    } else if (*f == '\\') {
+		isbackslash = 1;
+	    } else {
 		*p = *f;
 		if (p < end)
 		    p++;
@@ -200,6 +216,7 @@ dgl_exec_cmdqueue(struct dg_cmdpart *queue, int game, struct dg_user *me)
     struct dg_cmdpart *tmp = queue;
     char *p1;
     char *p2;
+    int played = 0;
 
     if (!queue) return 1;
 
@@ -216,11 +233,14 @@ dgl_exec_cmdqueue(struct dg_cmdpart *queue, int game, struct dg_user *me)
 
 	switch (tmp->cmd) {
 	default: break;
+	case DGLCMD_RAWPRINT:
+	    if (p1) fprintf(stdout, "%s", p1);
+	    break;
 	case DGLCMD_MKDIR:
 	    if (p1 && (access(p1, F_OK) != 0)) mkdir(p1, 0755);
 	    break;
 	case DGLCMD_UNLINK:
-	    if (p1 && (access(p1, F_OK) != 0)) unlink(p1);
+	    if (p1 && (access(p1, F_OK) == 0)) unlink(p1);
 	    break;
 	case DGLCMD_CHDIR:
 	    if (p1) {
@@ -320,12 +340,22 @@ dgl_exec_cmdqueue(struct dg_cmdpart *queue, int game, struct dg_user *me)
 	case DGLCMD_RETURN:
 	    return_from_submenu = 1;
 	    break;
+	case DGLCMD_PLAY_IF_EXIST:
+	    if (!(loggedin && me && p1 && p2)) break;
+	    {
+		FILE *tmpfile;
+		tmpfile = fopen(p2, "r");
+		if (tmpfile) {
+		    fclose(tmpfile);
+		} else break;
+	    }
+	    /* else fall through to playgame */
 	case DGLCMD_PLAYGAME:
-	    if (loggedin && me && p1) {
+	    if (loggedin && me && p1 && !played) {
 		int userchoice, i;
 		char *tmpstr;
 		for (userchoice = 0; userchoice < num_games; userchoice++) {
-		    if (!strcmp(myconfig[userchoice]->game_name, p1) || !strcmp(myconfig[userchoice]->shortname, p1)) {
+		    if (!strcmp(myconfig[userchoice]->game_id, p1) || !strcmp(myconfig[userchoice]->game_name, p1) || !strcmp(myconfig[userchoice]->shortname, p1)) {
 			if (purge_stale_locks(userchoice)) {
 			    if (myconfig[userchoice]->rcfile) {
 				if (access (dgl_format_str(userchoice, me, myconfig[userchoice]->rc_fmt, NULL), R_OK) == -1)
@@ -360,6 +390,7 @@ dgl_exec_cmdqueue(struct dg_cmdpart *queue, int game, struct dg_user *me)
 					 dgl_format_str(userchoice, me, myconfig[userchoice]->ttyrecdir, NULL),
 					 gen_ttyrec_filename());
 			    idle_alarm_set_enabled(1);
+			    played = 1;
 			    /* lastly, run the generic "do these when a game is left" commands */
 			    signal (SIGHUP, catch_sighup);
 			    signal (SIGINT, catch_sighup);
@@ -367,8 +398,9 @@ dgl_exec_cmdqueue(struct dg_cmdpart *queue, int game, struct dg_user *me)
 			    signal (SIGTERM, catch_sighup);
 			    signal(SIGWINCH, sigwinch_func);
 
+			    dgl_exec_cmdqueue(myconfig[userchoice]->postcmdqueue, userchoice, me);
+
 			    dgl_exec_cmdqueue(globalconfig.cmdqueue[DGLTIME_GAMEEND], userchoice, me);
-                            idle_alarm_set_enabled(1);
 
 			    setproctitle ("%s", me->username);
 			    initcurses ();
@@ -486,6 +518,7 @@ sort_games (struct dg_game **games, int len, dg_sortmode sortmode)
 	(void) time(&sort_ctime);
 	qsort(games, len, sizeof(struct dg_game *), sort_game_idletime);
 	break;
+    case SORTMODE_DURATION:
     case SORTMODE_STARTTIME: qsort(games, len, sizeof(struct dg_game *), sort_game_starttime); break;
 
     case SORTMODE_EXTRA_INFO:
@@ -726,13 +759,13 @@ populate_games (int xgame, int *l, struct dg_user *me)
 graceful_exit (int status)
 {
   /*FILE *fp;
-     if (status != 1)
-     {
+     if (status != 1) 
+     { 
      fp = fopen ("/crash.log", "a");
      char buf[100];
      sprintf (buf, "graceful_exit called with status %d", status);
      fputs (buf, fp);
-     }
+     } 
      This doesn't work. Ever.
    */
   endwin();
@@ -747,12 +780,16 @@ create_config ()
 
   if (!globalconfig.allow_registration) globalconfig.allow_registration = 1;
   globalconfig.menulist = NULL;
-  globalconfig.server_id = NULL;
+  globalconfig.banner_var_list = NULL;
+  globalconfig.locale = NULL;
+  globalconfig.defterm = NULL;
 
   globalconfig.shed_uid = (uid_t)-1;
   globalconfig.shed_gid = (gid_t)-1;
 
   globalconfig.sortmode = SORTMODE_USERNAME;
+  globalconfig.utf8esc = 0;
+  globalconfig.flowctrl = -1; /* undefined, don't touch it */
 
   if (config)
   {
@@ -808,7 +845,11 @@ create_config ()
   if (!globalconfig.dglroot) globalconfig.dglroot = "/dgldir/";
   if (!globalconfig.banner)  globalconfig.banner = "/dgl-banner";
 
+#ifndef USE_SQLITE3
   if (!globalconfig.passwd) globalconfig.passwd = "/dgl-login";
+#else
+  if (!globalconfig.passwd) globalconfig.passwd = USE_SQLITE_DB;
+#endif
   if (!globalconfig.lockfile) globalconfig.lockfile = "/dgl-lock";
   if (!globalconfig.shed_user && globalconfig.shed_uid == (uid_t)-1)
 	  {

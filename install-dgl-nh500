@@ -39,7 +39,7 @@
 
 # --dbfile <sqlite3 db> [<var>/dgamelaunch.db]   The location for the database.
 
-# --nano [FLAG]                       If you set the nano flag, nano will be
+# --without-nano [FLAG]               If you do not set this flag, nano will be
 #                                     installed in the chroot, for use as an
 #                                     editor. The default configuration
 #                                     assumes it is "built" with nano.
@@ -62,12 +62,13 @@
 # HACKDIR="/nh500"
 # PLAYGROUND="/nh500/var"
 #
-# ./install-dgl-nh500 --prefix /opt/nethack/nethack.alt.org --var /dgldir --etc /. --menudir /. --hackdir /nh500 --playground /nh500/var
+# ./install-dgl-nh500 --prefix /opt/nethack/nethack.alt.org --var /dgldir \
+#   --etc /. --menudir /. --hackdir /nh500 --playground /nh500/var --quiet
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     -h|--help|--usage|-?|--?)
-      printf "`sed -n '3,65p;65q' $0 | tr -d "#"`"
+      printf "`sed -n '3,66p;66q' $0 | tr -d "#"`\n\n"
       exit 0
       ;;
     -q|-s|--quiet|--silent)
@@ -116,10 +117,8 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
-    --nano)
-      DGLNANO="/${2#/}"
-      DGLNANO="${DGLNANO%/}"
-      shift
+    --without-nano)
+      NONANO=1
       shift
       ;;
     # Know what you're doing, or look up a guide on installing NetHack!
@@ -129,6 +128,11 @@ while [[ $# -gt 0 ]]; do
       ;;
     --fetch-dgl)
       FETCHDGL=1
+      shift
+      ;;
+    --clean)
+      CLEAN=1
+      shift
       ;;
     --)
       set --
@@ -136,7 +140,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     -*|--*)
       echo "Unknown option $1"
-      echo "Valid options are: --install-nh500, --nano, --quiet|--silent, --prefix <dir>, --var <dir>, --etc <dir>, --menudir <dir>, --hackdir <dir>, --playground <dir>"
+      echo "Try --help"
       exit 1
       ;;
     *)
@@ -162,40 +166,38 @@ USRGRP="games:games"
 # and can't run without it.
 #
 # If you change this here, you will have to change it in <chroot>/etc/dgamelaunch.conf too.
-if [ -z $CHROOT ]; then
-  CHROOT="/opt/dgamelaunch"
+if [ -z "$CHROOT" ]; then
+  CHROOT="opt/dgamelaunch"
 fi
 
 # In theory these would help keep dgamelaunch organized within its own environment.
 #
 # Each directory is within the chroot!
-#
-if [ -z $DGLVAR ]; then
-  DGLVAR="/var"
+
+# AKA dgldir
+if [ -z "$DGLVAR" ]; then
+  DGLVAR="var"
 fi
-if [ -z $DGLETC ]; then
-  DGLETC="/etc"
+if [ -z "$DGLETC" ]; then
+  DGLETC="etc"
 fi
-if [ -z $MENUDIR ]; then
+if [ -z "$MENUDIR" ]; then
   MENUDIR="$DGLETC/menu"
 fi
 
 # The path of the sqlite db for users.
 # If this is left undefined (commented out), DGL will be built
 # without sqlite3. Also, it'll probably not work.
-if [ -z $SQLITE_DBFILE ]; then
+if [ -z "$SQLITE_DBFILE" ]; then
   SQLITE_DBFILE="$DGLVAR/dgamelaunch.db"
 fi
-
-# These are baked into the patch files, so if you change them here,
-# change them there also.
-if [ -z $HACKDIR ]; then
-  HACKDIR="/opt/nh500"
+if [ -z "$HACKDIR" ]; then
+  HACKDIR="opt/nh500"
 fi
-if [ -z $PLAYGROUND ]; then
-  PLAYGROUND="/var/nh500"
+if [ -z "$PLAYGROUND" ]; then
+  PLAYGROUND="var/nh500"
 fi
-if [ -n $NONH ]; then
+if [ -z "$NONH" ]; then
   # Disable if you already have NetHack-5.0.0 source downloaded and uncompressed.
   FETCHNH=1
   # Disable if you don't want to patch linux.500 and config.h to make life easy.
@@ -205,13 +207,12 @@ if [ -n $NONH ]; then
   # Disable if you don't want NetHack to be installed in DGL's root.
   INSTALLNH=1
 fi
-
 # These are set in the NetHack Makefile, and possibly config.h
 # Note: the Makefile only appears after you run:
 # sys/unix/setup.sh sys/unix/hints/linux.500
 # from inside the NetHack source directory.
-COMPRESSBIN="/bin/gzip"
-GREPBIN="/bin/grep"
+COMPRESSBIN="bin/gzip"
+GREPBIN="bin/grep"
 
 # DON'T CHANGE THESE
 WORKDIR="`pwd`"
@@ -261,7 +262,9 @@ cpbin()
     echo "Copying $1 to `pwd`/$NEWDIR"
     mkdir -p "$NEWDIR"
     cp "`which $1`" "$NEWDIR/"
-    LIBS="$LIBS `findlibs $1`"
+    TMP="`findlibs $1`"
+    echo "Queuing libs for copying: $TMP"
+    LIBS="$LIBS $TMP"
   fi
 }
 
@@ -281,11 +284,16 @@ WORKDIR=`standdir $WORKDIR`
 # then fetch, patch, and build dgamelaunch, then go through the
 # dgl-create-chroot script.
 
+if [ -z "$CLEAN" ]; then # CLEAN SKIP
+
 set -e
 
 if [ -n "$QUIETMAKE" ]; then
   MAKEFLAGS="-s"
   AUTOGENFLAGS="-q"
+fi
+if [ -z "$QUIETMAKE" ]; then
+  PATCHFLAGS="--verbose"
 fi
 
 PATCH_ME="dgl-nh500.patch examples/dgamelaunch.conf"
@@ -316,12 +324,12 @@ if [ -n "$PATCHNH" -o -n "$BUILDNH" -o -n "$INSTALLNH" ]; then
   cd NetHack-5.0.0
 fi
 if [ -n "$PATCHNH" ]; then
-  patch -p1 --verbose < "/$WORKDIR/dgl-nh500.patch"
+  patch -p1 $PATCHFLAGS < "/$WORKDIR/dgl-nh500.patch"
   sys/unix/setup.sh sys/unix/hints/linux.500
 fi
 if [ -n "$BUILDNH" ]; then
   make $MAKEFLAGS fetch-lua
-  echo "NOTE: btw, don't worry about these git messages. git doesn't matter."
+  [ -n "$QUIETMAKE" ] && echo "NOTE: btw, don't worry about these git messages. git doesn't matter."
   make $MAKEFLAGS all
 fi
 if [ -n "$INSTALLNH" ]; then
@@ -337,7 +345,7 @@ if [ -n "$FETCHDGL" ]; then
   dglmess="dgamelaunch-`echo "${DGL}" | awk -F/ '{ print $7 }' | awk -F. '{ print $1 }'`"
   mv "$dglmess" dgamelaunch
   cd dgamelaunch
-  patch -p1 --verbose < "/$WORKDIR/dgl.patch"
+  patch -p1 $PATCHFLAGS < "/$WORKDIR/dgl.patch"
 fi
 
 autoupdate
@@ -377,12 +385,14 @@ mkdir -p "/$CHROOT" || errorexit "Cannot create chroot."
 
 cd "/$CHROOT"
 
-mkdir -p "$MENUDIR" "$DGLVAR" etc var opt lib mail usr bin dev
-mkdir -p "$DGLVAR/inprogress-nh500"
+mkdir -p "$DGLETC" "$MENUDIR" "$DGLVAR" lib mail usr bin dev
+mkdir -p "$DGLVAR/inprogress-nh500tty"
+mkdir -p "$DGLVAR/inprogress-nh500curses"
 mkdir -p "$DGLVAR/userdata"
 
 chown "$USRGRP" "$DGLVAR" mail
-chown "$USRGRP" "./$DGLVAR/inprogress-nh500"
+chown "$USRGRP" "./$DGLVAR/inprogress-nh500tty"
+chown "$USRGRP" "./$DGLVAR/inprogress-nh500curses"
 chown "$USRGRP" "./$DGLVAR/userdata"
 
 # Create randomness device
@@ -404,8 +414,8 @@ chmod go+r "$MENUDIR/dgl_menu_main_anon.txt" "$MENUDIR/dgl_menu_main_user.txt" "
 # Copy extraneous binaries to /bin
 cpbin /$COMPRESSBIN
 cpbin /$GREPBIN
-if [ -n "$DGLNANO" ]; then
-  cpbin /bin/nano
+if [ -z "$NONANO" ]; then
+  cpbin "`which nano`"
 fi
 cp "/$CURDIR/virus" bin
 
@@ -428,8 +438,8 @@ DGLFILE="dgamelaunch.`date +%Y%m%d`"
 LIBS="$LIBS `findlibs /$CURDIR/dgamelaunch`"
 cp "/$CURDIR/dgamelaunch" "bin/$DGLFILE"
 ln -s "$DGLFILE" bin/dgamelaunch
-# THIS IS IMPORTANT to make watch_games/shmem function
-ln -s /bin/dgamelaunch .
+# IMPORTANT -- see bug in TODO
+ln -s "$DGLFILE" ./dgamelaunch
 
 # Creating sqlite db
 if [ -n "$SQLITE_DBFILE" ]; then
@@ -439,6 +449,7 @@ fi
 
 # Copying libraries
 LIBS=`for lib in $LIBS; do echo $lib; done | sort | uniq`
+echo "Copying the following libraries: $LIBS"
 for lib in $LIBS; do
   mkdir -p "/$CHROOT`dirname $lib`"
   cp $lib "/$CHROOT$lib"
@@ -468,16 +479,29 @@ if [ -n "$TERMDATA" ]; then
     done
 fi
 
+fi # CLEAN SKIP
 
 # cleanup
 cd "/$WORKDIR"
-RM_ME="$HACKDIR $PLAYGROUND NetHack-5.0.0 dgamelaunch.zip nethack-500-src.tgz"
-if [ -n $INSTALLDGL ]; then
-  RM_ME="$RM_ME dgamelaunch"
+RM_ME="/$HACKDIR /$PLAYGROUND /nethack NetHack-5.0.0 nethack-500-src.tgz* dgl-nh500.patch examples/dgamelaunch.conf"
+MV_ME="dgl-nh500.patch.bak examples/dgamelaunch.conf.bak configure.ac~ configure~"
+if [ -n "$INSTALLDGL" ]; then
+  RM_ME="$RM_ME dgamelaunch dgamelaunch.zip"
 fi
-rm -rf $RM_ME
+echo ""
+echo "TO COMPLETE CLEANUP, Remove these files:"
+echo ""
+echo "rm -r $RM_ME"
+echo ""
+echo ""
+echo "I won't do it because I don't know if HACKDIR or PLAYGROUND might have been set poorly. (ie I might accidentally rm -rf /.)"
+echo ""
+
+for file in $MV_ME; do
+  fileorig=${file%.bak}
+  fileorig=${fileorig%\~}
+  mv -f $file $fileorig 2> /dev/null
+done
 
 echo "Finished."
-
-
-
+exit 0

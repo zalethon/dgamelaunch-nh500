@@ -87,6 +87,8 @@ int master;
 struct termios tt;
 struct winsize win;
 
+char last_ttyrec[512] = { '\0' };
+
 int ancient_encoding = 0;
 
 void
@@ -97,6 +99,7 @@ ttyrec_id(int game, char *username, char *ttyrec_filename)
     Header h;
     char *buf = (char *)malloc(1024);
     char tmpbuf[256];
+    char *server_id = banner_var_value("$SERVERID");
     if (!buf) return;
 
     tstamp = time(NULL);
@@ -113,7 +116,7 @@ ttyrec_id(int game, char *username, char *ttyrec_filename)
             dCLRSCR,
             username,
             myconfig[game]->game_name,
-            globalconfig.server_id,
+	    (server_id ? server_id : "Unknown"),
             ttyrec_filename,
             tstamp, ctime(&tstamp)
             );
@@ -159,6 +162,8 @@ ttyrec_main (int game, char *username, char *ttyrec_path, char* ttyrec_filename)
   ancient_encoding = myconfig[game]->encoding;
   if (ancient_encoding == -1)
       query_encoding(game, username);
+
+  snprintf(last_ttyrec, 512, "%s", dirname);
 
   atexit(&remove_ipfile);
   if ((fscript = fopen (dirname, "w")) == NULL)
@@ -662,7 +667,7 @@ static void query_encoding(int game, char *username)
         fprintf(stderr, "Error: can't obtain charset info.\nPress any key...\n");
         read(0, buf, 1);
         close(p[0]); // SIGPIPE
-        kill(son, SIGKILL); // and SIGTERM for a good measure
+        kill(son, SIGTERM); // and SIGTERM for a good measure
         waitpid(son, 0, 0);
         ancient_encoding = 0;
         return;
@@ -673,7 +678,7 @@ static void query_encoding(int game, char *username)
     read(p[0], buf, sizeof(buf)-1);
     buf[sizeof(buf)-1] = 0;
     close(p[0]);
-    kill(son, SIGKILL);
+    kill(son, SIGTERM);
     waitpid(son, 0, 0);
     if (strchr(buf, '\n'))
         *strchr(buf, '\n') = 0;

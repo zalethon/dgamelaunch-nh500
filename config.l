@@ -27,10 +27,10 @@ WHITE		[\t ]*
 {NEGNUMBER} {
   fprintf(stderr,"%s:%d: negative value not accepted! Fix it now!\n",
       config, line);
-  graceful_exit(1);
+  graceful_exit(13);
 }
 
-{NUMBER} {
+{NUMBER} { 
   yylval.i = strtoul(yytext, NULL, 10);
   return TYPE_NUMBER;
 }
@@ -43,8 +43,8 @@ WHITE		[\t ]*
 
 {MALSTRING} {
   yytext[yyleng - 1] = '\0'; /* remove trailing newline */
-  fprintf(stderr, "%s:%d:%d: unterminated string constant: %s\n", config, line, col - yyleng + 1, yytext);
-  return TYPE_MALSTRING;
+  fprintf(stderr, "%s:%d:%d: unterminated string constant: %s\n", config, line, (int)(col - yyleng + 1), yytext);
+  return TYPE_MALSTRING; 
 }
 
 {WHITE}		{ }
@@ -74,6 +74,7 @@ cursor		{ return TYPE_CURSOR; }
 "chroot_path"	{ return TYPE_PATH_CHROOT; }
 "game_name"     { return TYPE_NAME_GAME; }
 "short_name"	{ return TYPE_GAME_SHORT_NAME; }
+"game_id"	{ return TYPE_GAME_ID; }
 "game_path"	{ return TYPE_PATH_GAME; }
 "dglroot"	{ return TYPE_PATH_DGLDIR; }
 "spooldir"	{ return TYPE_PATH_SPOOL; }
@@ -87,11 +88,18 @@ extra_info_file { return TYPE_EXTRA_INFO_FILE; }
 "max_idle_time"	{ return TYPE_MAX_IDLE_TIME; }
 "rc_fmt"	{ return TYPE_RC_FMT; }
 "ttyrecdir"	{ return TYPE_PATH_TTYREC; }
-server_id	{ return TYPE_SERVER_ID; }
+bannervars	{ return TYPE_BANNERVARS; }
+timeformat	{ return TYPE_TIMEFORMAT; }
 sortmode	{ return TYPE_WATCH_SORTMODE; }
-watch_columns   { return TYPE_WATCH_COLUMNS; }
+watch_columns	{ return TYPE_WATCH_COLUMNS; }
 commands	{ return TYPE_CMDQUEUE; }
+postcommands	{ return TYPE_POSTCMDQUEUE; }
 encoding	{ return TYPE_ENCODING; }
+locale		{ return TYPE_LOCALE; }
+default_term	{ return TYPE_DEFTERM; }
+utf8esc		{ return TYPE_UTF8ESC; }
+flowcontrol	{ return TYPE_FLOWCTRL; }
+filemode	{ return TYPE_FILEMODE; }
 yes		{ yylval.i = 1; return TYPE_BOOL; }
 no		{ yylval.i = 0; return TYPE_BOOL; }
 dglstart	{ yylval.i = DGLTIME_DGLSTART; return TYPE_CMDQUEUENAME; }
@@ -113,8 +121,10 @@ ask_login	{ yylval.i = DGLCMD_LOGIN;      return TYPE_DGLCMD0; }
 ask_register	{ yylval.i = DGLCMD_REGISTER;   return TYPE_DGLCMD0; }
 quit		{ yylval.i = DGLCMD_QUIT;       return TYPE_DGLCMD0; }
 play_game	{ yylval.i = DGLCMD_PLAYGAME;    return TYPE_DGLCMD1; }
+play_if_exist	{ yylval.i = DGLCMD_PLAY_IF_EXIST;    return TYPE_DGLCMD2; }
 submenu		{ yylval.i = DGLCMD_SUBMENU;     return TYPE_DGLCMD1; }
 return		{ yylval.i = DGLCMD_RETURN;      return TYPE_DGLCMD0; }
+rawprint	{ yylval.i = DGLCMD_RAWPRINT;    return TYPE_DGLCMD1; }
 DEFINE		{ return TYPE_DEFINE_GAME; }
 
 
@@ -122,7 +132,7 @@ DEFINE		{ return TYPE_DEFINE_GAME; }
 
 [0-9a-zA-Z_]+ {
   fprintf(stderr, "%s:%d:%d unrecognized token \"%s\"\n", config, line, col, yytext);
-  graceful_exit(1);
+  graceful_exit(12);
 }
 
 %%

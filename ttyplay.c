@@ -58,7 +58,7 @@
 #include "io.h"
 #include "stripgfx.h"
 
-#ifdef __MACH__
+#if defined(__MACH__) || defined(__FreeBSD__) || defined(__NetBSD__)
 typedef void (*sighandler_t)(int);
 #endif
 
@@ -112,7 +112,7 @@ ttywait (struct timeval prev, struct timeval cur, double speed)
   diff = timeval_div (diff, speed);
 
   select (1, NULL, NULL, NULL, &diff); /* skip if a user hits any key */
-
+  
   return speed;
 }
 
@@ -156,9 +156,9 @@ ttyplay_keyboard_action(int c)
     case 's':
         switch (stripped)
         {
-        case NO_GRAPHICS: populate_gfx_array ((stripped = UNICODE_GRAPHICS)); break;
-        case UNICODE_GRAPHICS: populate_gfx_array ((stripped = IBM_GRAPHICS)); break;
-        case IBM_GRAPHICS: populate_gfx_array ((stripped = NO_GRAPHICS)); break;
+	case NO_GRAPHICS: populate_gfx_array ((stripped = DEC_GRAPHICS)); break;
+	case DEC_GRAPHICS: populate_gfx_array ((stripped = IBM_GRAPHICS)); break;
+	case IBM_GRAPHICS: populate_gfx_array ((stripped = NO_GRAPHICS)); break;
         }
         return READ_RESTART;
 
@@ -258,9 +258,9 @@ ttypread (FILE * fp, Header * h, char **buf, int pread)
   int action = READ_DATA;
 
 #ifdef HAVE_KQUEUE
-    if (kq == -1)
-        kq = kqueue ();
-    if (kq == -1)
+  if (kq == -1)
+    kq = kqueue ();
+  if (kq == -1)
     {
       printf ("kqueue() failed.\n");
       return READ_QUIT;
@@ -276,28 +276,28 @@ ttypread (FILE * fp, Header * h, char **buf, int pread)
       fflush(stdout);
       clearerr (fp);
 #ifdef HAVE_KQUEUE
-        n = -1;
-        if (kq != -2)
-        {
-            EV_SET (&evt[0], STDIN_FILENO, EVFILT_READ, EV_ADD | EV_ONESHOT, 0, 0, NULL);
-            EV_SET (&evt[1], fileno (fp), EVFILT_READ, EV_ADD | EV_ONESHOT, 0, 0, NULL);
-            n = kevent (kq, evt, 2, evt, 1, NULL);
-            doread = (n >= 1 && evt[0].ident == STDIN_FILENO &&
-                      evt[0].filter == EVFILT_READ) ||
-                (n >= 2 && evt[1].ident == STDIN_FILENO &&
-                 evt[1].filter == EVFILT_READ);
-            if (n == -1)
-            {
-                /*
-                 * Perhaps kevent(2) doesn't work on this fstype,
-                 * use select(2) instead. Never use kevent again, assuming all
-                 * active ttyrecs are on the same fstype.
-                 */
-                close(kq);
-                kq = -2;
-            }
-        }
-        if (n == -1)
+      n = -1;
+      if (kq != -2)
+      {
+	EV_SET (&evt[0], STDIN_FILENO, EVFILT_READ, EV_ADD | EV_ONESHOT, 0, 0, NULL);
+	EV_SET (&evt[1], fileno (fp), EVFILT_READ, EV_ADD | EV_ONESHOT, 0, 0, NULL);
+	n = kevent (kq, evt, 2, evt, 1, NULL);
+	doread = (n >= 1 && evt[0].ident == STDIN_FILENO &&
+	  evt[0].filter == EVFILT_READ) ||
+	  (n >= 2 && evt[1].ident == STDIN_FILENO &&
+	   evt[1].filter == EVFILT_READ);
+	if (n == -1)
+	  {
+	    /*
+	     * Perhaps kevent(2) doesn't work on this fstype,
+	     * use select(2) instead. Never use kevent again, assuming all
+	     * active ttyrecs are on the same fstype.
+	     */
+	    close(kq);
+	    kq = -2;
+	  }
+      }
+      if (n == -1)
 #endif
       {
 	if (counter++ > (20 * 60 * 10))
@@ -342,8 +342,13 @@ ttypread (FILE * fp, Header * h, char **buf, int pread)
 void
 ttywrite (char *buf, int len)
 {
-  if (stripped != NO_GRAPHICS)
-      buffer_strip_gfx (buf, &len);
+  int i;
+
+  for (i = 0; i < len; i++)
+  {
+    if (stripped != NO_GRAPHICS)
+      buf[i] = strip_gfx (buf[i]);
+  }
 
   fwrite (buf, 1, len, stdout);
 }
@@ -392,7 +397,6 @@ ttyplay (FILE * fp, double speed, ReadFunc read_func,
   return r;
 }
 
-// Subsequence must be less than 512 bytes!
 static off_t
 find_last_string_in_file(FILE * fp, const char *seq)
 {

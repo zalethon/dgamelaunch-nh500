@@ -21,24 +21,24 @@
 
 #define DGL_PLAYERNAMELEN 30 /* max. length of player name */
 #define DGL_PASSWDLEN 20 /* max. length of passwords */
-#define DGL_CRYPTLEN 128 /* max. length of encrypted password */
-#define DGL_MAILMSGLEN 78 /* max. length of mail message */
-
-#define DGL_PWALG "6"  /* glibc crypt algorithm; "" for traditional DES */
-#define DGL_SALTLEN 16 /* number of characters of salt */
-
-/* number of 32-bit words needed to fill the salt */
-#define DGL_SALT_WORDS ((DGL_SALTLEN * 6 + 31) / 32)
+#define DGL_CRYPTLEN 128
+#define DGL_PWALG "6"
+#define DGL_SALTLEN 16
+#define DGL_SALT_WORDS ((DGL_SALTLEN *6 + 31) / 32)
+#define DGL_MAILMSGLEN 80 /* max. length of mail message */
 
 #define DGL_MAXWATCHCOLS 10
 
+#define DGL_BANNER_LINELEN 256 /* max. length of banner lines*/
+
 #ifdef USE_NCURSES_COLOR
-# define CLR_NORMAL  COLOR_PAIR(1)   | A_NORMAL
-# define CLR_RED     COLOR_PAIR(2)   | A_NORMAL
+# define CLR_NORMAL  COLOR_PAIR(11)   | A_NORMAL
+# define CLR_RED     COLOR_PAIR(COLOR_RED)   | A_NORMAL
 #else
 # define CLR_NORMAL  0
 # define CLR_RED     0
 #endif
+extern int color_remap[];
 
 typedef enum
 {
@@ -58,9 +58,69 @@ typedef enum
     NUM_DGLTIMES
 } dglcmd_times;
 
+typedef enum
+{
+    DGLCMD_NONE = 0,
+    DGLCMD_RAWPRINT,	/* rawprint "foo" */
+    DGLCMD_MKDIR,	/* mkdir foo */
+    DGLCMD_CHDIR,	/* chdir foo */
+    DGLCMD_IF_NX_CP,	/* ifnxcp foo bar */
+    DGLCMD_CP,		/* cp foo bar */
+    DGLCMD_UNLINK,	/* unlink foo */
+    DGLCMD_EXEC,	/* exec foo bar */
+    DGLCMD_SETENV,	/* setenv foo bar */
+    DGLCMD_WATCH_MENU,  /* watch_menu */
+    DGLCMD_LOGIN,       /* ask_login */
+    DGLCMD_REGISTER,	/* ask_register */
+    DGLCMD_QUIT,	/* quit */
+    DGLCMD_CHMAIL,	/* chmail */
+    DGLCMD_CHPASSWD,	/* chpasswd */
+    DGLCMD_PLAYGAME,	/* play_game "foo" */
+    DGLCMD_PLAY_IF_EXIST,	/* play_if_exist "game" "file" */
+    DGLCMD_SUBMENU,	/* submenu "foo" */
+    DGLCMD_RETURN	/* return */
+} dglcmd_actions;
+
+typedef enum
+{
+    SORTMODE_NONE = 0,
+    SORTMODE_USERNAME,
+    SORTMODE_GAMENUM,
+    SORTMODE_WINDOWSIZE,
+    SORTMODE_STARTTIME,
+    SORTMODE_DURATION,
+    SORTMODE_IDLETIME,
+    SORTMODE_EXTRA_INFO,
+#ifdef USE_SHMEM
+    SORTMODE_WATCHERS,
+#endif
+    NUM_SORTMODES
+} dg_sortmode;
+
+static const char *SORTMODE_NAME[NUM_SORTMODES] = {
+    "Unsorted",
+    "Username",
+    "Game",
+    "Windowsize",
+    "Starttime",
+    "Duration",
+    "Idletime",
+    "Extrainfo",
+#ifdef USE_SHMEM
+    "Watchers",
+#endif
+};
+
+struct dg_banner_var {
+    char *name;
+    char *value;
+    int special;
+    struct dg_banner_var *next;
+};
+
 struct dg_cmdpart
 {
-    dglcmd_times cmd;
+    dglcmd_actions cmd;
     char *param1;
     char *param2;
     struct dg_cmdpart *next;
@@ -143,6 +203,7 @@ struct dg_config
 {
   char* game_path;
   char* game_name;
+  char* game_id;
   char* shortname;
   char* rcfile;
   char* ttyrecdir;
@@ -152,6 +213,7 @@ struct dg_config
     char **bin_args; /* args for game binary */
     char *rc_fmt;
     struct dg_cmdpart *cmdqueue;
+    struct dg_cmdpart *postcmdqueue;
     int max_idle_time;
     char *extra_info_file;
     int encoding; // -1 = run --print-charset
@@ -180,7 +242,11 @@ struct dg_globalconfig
     char* lockfile;
     int allow_registration; /* allow registering new nicks */
     int sortmode; /* default watching-screen sortmode */
-    char *server_id; /* string for the server name or whatever */
+    struct dg_banner_var *banner_var_list;
+    char *locale;
+    int utf8esc; /* send select-utf8-charset escape code */
+    char *defterm; /* default TERM in case user TERM is unknown  */
+    int flowctrl; /* XON/XOFF for games? */
 
     struct dg_cmdpart *cmdqueue[NUM_DGLTIMES];
 
@@ -192,54 +258,6 @@ struct dg_globalconfig
     int menu_max_idle_time;
 };
 
-typedef enum
-{
-    DGLCMD_NONE = 0,
-    DGLCMD_MKDIR,	/* mkdir foo */
-    DGLCMD_CHDIR,	/* chdir foo */
-    DGLCMD_IF_NX_CP,	/* ifnxcp foo bar */
-    DGLCMD_CP,		/* cp foo bar */
-    DGLCMD_UNLINK,	/* unlink foo */
-    DGLCMD_EXEC,	/* exec foo bar */
-    DGLCMD_SETENV,	/* setenv foo bar */
-    DGLCMD_WATCH_MENU,  /* watch_menu */
-    DGLCMD_LOGIN,       /* ask_login */
-    DGLCMD_REGISTER,	/* ask_register */
-    DGLCMD_QUIT,	/* quit */
-    DGLCMD_CHMAIL,	/* chmail */
-    DGLCMD_CHPASSWD,	/* chpasswd */
-    DGLCMD_PLAYGAME,	/* play_game "foo" */
-    DGLCMD_SUBMENU,	/* submenu "foo" */
-    DGLCMD_RETURN	/* return */
-} dglcmd_actions;
-
-typedef enum
-{
-    SORTMODE_NONE = 0,
-    SORTMODE_USERNAME,
-    SORTMODE_GAMENUM,
-    SORTMODE_WINDOWSIZE,
-    SORTMODE_STARTTIME,
-    SORTMODE_IDLETIME,
-    SORTMODE_EXTRA_INFO,
-#ifdef USE_SHMEM
-    SORTMODE_WATCHERS,
-#endif
-    NUM_SORTMODES
-} dg_sortmode;
-
-static const char *SORTMODE_NAME[NUM_SORTMODES] = {
-    "Unsorted",
-    "Username",
-    "Game",
-    "Windowsize",
-    "Starttime",
-    "Idletime",
-    "Extrainfo",
-#ifdef USE_SHMEM
-    "Watchers",
-#endif
-};
 
 
 /* Global variables */
@@ -264,6 +282,8 @@ extern mode_t default_fmode;
 extern int dgl_local_COLS;
 extern int dgl_local_LINES;
 
+extern char last_ttyrec[512];
+
 /* dgamelaunch.c */
 extern void create_config(void);
 extern void ttyrec_getmaster(void);
@@ -272,7 +292,10 @@ extern char *gen_ttyrec_filename(void);
 extern char *gen_inprogress_lock(int game, pid_t pid, char *ttyrec_filename);
 extern void catch_sighup(int signum);
 extern void loadbanner(char *fname, struct dg_banner *ban);
-extern void drawbanner(struct dg_banner *ban, unsigned int start_line, unsigned int howmany);
+extern void drawbanner(struct dg_banner *ban);
+extern void banner_var_add(char *name, char *value, int special);
+extern char *banner_var_value(char *name);
+extern void banner_var_free(void);
 extern int check_retard(int reset);
 extern char *dgl_format_str(int game, struct dg_user *me, char *str, char *plrname);
 
