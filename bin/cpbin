@@ -1,43 +1,90 @@
 #!/bin/bash
 
+# cpbin copies a binary and its necessary libraries into a given directory.
+# The purpose is to aid in preparing chroots.
+#
+# It doesn't do any other preparation of the directory as a chroot; it only
+# copies bins and libs.
+#
+# refactored out of original dgl-create-chroot
+#
+# cpbin [OPTIONS] BINARY [DIRECTORY]
+#
+# [DIRECTORY] defaults to "$HOME/chroot"
+#
+# OPTIONS
+# -b|-B|--lib [dir]	Sets BINDIR, the directory for the binary to live.
+#			Defaults to the binary's dirname.
+#			Path is from inside the chroot! So -b /bin will install
+#			binaries in /<DIRECTORY>/bin
+
+# -l|-L|--lib [dir]	Sets LIBDIR, the directory for libraries to live.
+#			Defaults to the library's dirname, for each library.
+#			Path is from inside the chroot! See above.
+
+# -n|--libs-only|--nobin  Causes the program to refrain from copying the
+#			  binaries; it only copies libraries.
+
+# -N|--bin-only|--nolibs  Causes the program to refrain from copying the
+#			  libraries; it only copies binaries.
+
+# -d|-D|--dirs-only	Creates the requisite directory structure only. Does
+#			not copy any files. Equivalent to setting both
+#			NOBIN and NOLIBS.
+
+# --dry			Causes the program to only output what it would do, if
+#			it had not received the --dry option. ie do nothing
+
+# -q|-s|--quiet|--silent  Causes the program to refrain from making extraneous
+#			  noises.
+
+# -h|-?|--help|--usage	Display this help message.
+# ^^ line 41
+
 set -e
+umask 022
 
-## All of these were written for dgl-create-chroot
-# findlibs from original dgl-create-chroot
-findlibs()
-{
-  for i in "$@"; do
-    if [ -z "`ldd "$i" | grep 'not a dynamic executable'`" ]; then
-      echo $(ldd "$i" | awk '{ print $3 }' | egrep -v ^'\(')
-      echo $(ldd "$i" | grep 'ld-linux' | awk '{print $1}')
-    fi
-  done
-}
+# Some other programs
+cpbindir=`dirname $0`
+sanepath=$cpbindir/sanepath
+findlibs=$cpbindir/findlibs
 
-# cpbin refactored out of original dgl-create-chroot
-fcpbin()
-{
-  USEBIN=`which $1`
-  if [ -e "$USEBIN" ]; then
-    NEWDIR=`dirname $USEBIN`
-    echo "Copying $USEBIN to $CHROOT$NEWDIR"
-    mkdir -p "$CHROOT$NEWDIR"
-    cp "$USEBIN" "$CHROOT$NEWDIR/"
-    if [ -n LIBS ]; then
-      LIBS="$LIBS `findlibs $USEBIN`"
-    fi
-    if [ -z LIBS ]; then
-      LIBS="`findlibs $USEBIN`"
-    fi
-  fi
-}
-
+# take options
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -b|--BIN)
-      BIN="${2#/}"
-      BIN="${BIN%/}"
+    -h|--help|--usage|-?|--?)
+      printf "`sed -n '3,41p;41q' $0 | tr -d "#"`\n\n"
+      exit 0
+      ;;
+    -b|-B|--bin)
+      BINDIR=`$sanepath $2`
       shift
+      shift
+      ;;
+    -l|-L|--lib)
+      LIBDIR=`$sanepath $2`
+      shift
+      shift
+      ;;
+    -n|--libs-only|--nobin)
+      NOBIN=1
+      shift
+      ;;
+    -N|--bin-only|--nolibs)
+      NOLIBS=1
+      shift
+      ;;
+    -d|-D|--dirs-only)
+      NOBIN=1
+      NOLIBS=1
+      shift
+      ;;
+    -q|-s|--quiet|--silent)
+      QUIET=1
+      shift
+      ;;
+    --dry)
+      DRYRUN=1
       shift
       ;;
     --)
@@ -46,6 +93,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     -*|--*)
       echo "Unknown option $1"
+      echo "Try --help"
       exit 1
       ;;
     *)
@@ -53,16 +101,50 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-CHROOT="${2#/}"
-CHROOT="${CHROOT%/}"
 
-fcpbin $1
+[ -z "$1" ] && ( printf "`sed -n '3,29p;29q' $0 | tr -d "#"`\n\n"; exit 0; )
 
-# This also taken from dgl-create-chroot
-if [ -n LIBS ]; then
-  LIBS=`for lib in $LIBS; do echo $lib; done | sort | uniq`
-  for lib in $LIBS; do
-    mkdir -p "$CHROOT`dirname $lib`"
-    cp $lib "$CHROOT$lib"
+# functions
+say() {
+  [ -z "$QUIET" ] && printf "$1\n"
+}
+
+mkdirif() {
+  if [ ! -d "$2" ]; then
+    say "Making $1 directory at $2"
+    [ -z "$DRYRUN" ] && mkdir -p "$2" || say " - (dry run)"
+  fi;
+}
+
+cpif() {
+  say "  - Copying $1 to $2"
+  [ -z "$DRYRUN" ] && cp "$1" "$2/" || say "   - (dry run)"
+}
+
+#####
+# Check if there's a given root, and make the directory.
+[ -z "$2" ] \
+ && (say "No chroot given; using $HOME/chroot"; CHROOT="$HOME/chroot") \
+ || CHROOT="$2"
+mkdirif "chroot" "$CHROOT"
+say "Copying $1 to chroot $CHROOT"
+
+# Check that the bin will work, and set BINDIR.
+USEBIN=`which $1` || ( >&2 echo "ERROR: $1 is not executable."; exit 1; )
+[ -z "$BINDIR" ] && BINDIR="`dirname $USEBIN`"
+
+# Make the directory, and copy the bin.
+mkdirif "bin" "$CHROOT$BINDIR"
+[ -z "$NOBIN" ] && cpif "$USEBIN" "$CHROOT$BINDIR"
+
+# Check whether there are libraries, and set up those directories.
+USELIBS=`$findlibs $USEBIN`
+if [ -n "$USELIBS" ]; then
+  USELIBS=`for lib in $USELIBS; do echo $lib; done | sort | uniq`
+  for lib in $USELIBS; do
+    USEDIR=`dirname $lib`
+    [ -n "$LIBDIR" ] && USEDIR=$LIBDIR
+    mkdirif "lib" "$CHROOT$USEDIR"
+    cpif $lib "$CHROOT$USEDIR"
   done
 fi
