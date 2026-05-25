@@ -62,12 +62,13 @@
 # HACKDIR="/nh500"
 # PLAYGROUND="/nh500/var"
 #
-# ./install-dgl-nh500 --prefix /opt/nethack/nethack.alt.org --var /dgldir --etc /. --menudir /. --hackdir /nh500 --playground /nh500/var
+# ./install-dgl-nh500 --prefix /opt/nethack/nethack.alt.org --var /dgldir \
+#   --etc /. --menudir /. --hackdir /nh500 --playground /nh500/var --quiet
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     -h|--help|--usage|-?|--?)
-      printf "`sed -n '3,65p;65q' $0 | tr -d "#"`"
+      printf "`sed -n '3,66p;66q' $0 | tr -d "#"`\n\n"
       exit 0
       ;;
     -q|-s|--quiet|--silent)
@@ -127,6 +128,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --fetch-dgl)
       FETCHDGL=1
+      shift
+      ;;
+    --clean)
+      CLEAN=1
       shift
       ;;
     --)
@@ -279,6 +284,8 @@ WORKDIR=`standdir $WORKDIR`
 # then fetch, patch, and build dgamelaunch, then go through the
 # dgl-create-chroot script.
 
+if [ -z "$CLEAN" ]; then # CLEAN SKIP
+
 set -e
 
 if [ -n "$QUIETMAKE" ]; then
@@ -378,12 +385,14 @@ mkdir -p "/$CHROOT" || errorexit "Cannot create chroot."
 
 cd "/$CHROOT"
 
-mkdir -p "$MENUDIR" "$DGLVAR" etc var opt lib mail usr bin dev
-mkdir -p "$DGLVAR/inprogress-nh500"
+mkdir -p "$DGLETC" "$MENUDIR" "$DGLVAR" lib mail usr bin dev
+mkdir -p "$DGLVAR/inprogress-nh500tty"
+mkdir -p "$DGLVAR/inprogress-nh500curses"
 mkdir -p "$DGLVAR/userdata"
 
 chown "$USRGRP" "$DGLVAR" mail
-chown "$USRGRP" "./$DGLVAR/inprogress-nh500"
+chown "$USRGRP" "./$DGLVAR/inprogress-nh500tty"
+chown "$USRGRP" "./$DGLVAR/inprogress-nh500curses"
 chown "$USRGRP" "./$DGLVAR/userdata"
 
 # Create randomness device
@@ -470,22 +479,29 @@ if [ -n "$TERMDATA" ]; then
     done
 fi
 
+fi # CLEAN SKIP
 
 # cleanup
 cd "/$WORKDIR"
 RM_ME="/$HACKDIR /$PLAYGROUND /nethack NetHack-5.0.0 nethack-500-src.tgz* dgl-nh500.patch examples/dgamelaunch.conf"
 MV_ME="dgl-nh500.patch.bak examples/dgamelaunch.conf.bak configure.ac~ configure~"
-for file in $MV_ME; do
-  fileorig=${file%.bak}
-  fileorig=${fileorig%\~}
-  mv -f $file $fileorig
-done
 if [ -n "$INSTALLDGL" ]; then
   RM_ME="$RM_ME dgamelaunch dgamelaunch.zip"
 fi
-rm -rf $RM_ME
+echo ""
+echo "TO COMPLETE CLEANUP, Remove these files:"
+echo ""
+echo "rm -r $RM_ME"
+echo ""
+echo ""
+echo "I won't do it because I don't know if HACKDIR or PLAYGROUND might have been set poorly. (ie I might accidentally rm -rf /.)"
+echo ""
+
+for file in $MV_ME; do
+  fileorig=${file%.bak}
+  fileorig=${fileorig%\~}
+  mv -f $file $fileorig 2> /dev/null
+done
 
 echo "Finished."
-
-
-
+exit 0
