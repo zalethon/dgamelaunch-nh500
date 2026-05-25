@@ -2,65 +2,25 @@ dnl Use autoconf 2.53
 dnl (Things tend to break across versions, they're neither upwards nor
 dnl downward compatible. Blame GNU.)
 
-AC_INIT([dgamelaunch],[1.5.1])
+AC_INIT([dgamelaunch],[1.5.1],[https://github.com/zalethon/dgamelaunch-nh500/issues])
 AC_PREREQ([2.72])
-
+AC_CONFIG_SRCDIR([dgamelaunch.c])
 AC_CONFIG_HEADERS([config.h])
 
+
+# Testing the environment
 AC_PROG_CC(cc gcc)
-m4_warn([obsolete],
-[The preprocessor macro 'STDC_HEADERS' is obsolete.
-  Except in unusual embedded environments, you can safely include all
-  C89 headers unconditionally.])dnl
-# Autoupdate added the next two lines to ensure that your configure
-# script's behavior did not change.  They are probably safe to remove.
-AC_CHECK_INCLUDES_DEFAULT
-AC_PROG_EGREP
-
-
-AC_PROG_LEX
-if test -z "$LEX"; then
-   AC_MSG_ERROR([lex or flex not found.])
-fi
-
-LEXLIBS="$LEXLIB"
-
-AC_CHECK_LIB(pthread, pthread_create, [], [AC_MSG_ERROR([need pthreads])])
-
-AC_CHECK_PROGS(YACC, 'bison -y' byacc yacc)
-if test -z "$YACC"; then
-   AC_MSG_ERROR([bison or yacc not found.])
-fi
-
-case "$(uname -s)" in
-  Linux | *BSD)
-    MY_LIBS="$MY_LIBS -lutil -lcrypt"
-    AC_DEFINE(NOSTREAMS, 1, [Do not use SVR4 streams support in ttyrec.])
-  ;;
-esac
-
-AC_MSG_CHECKING([for Solaris cc])
-case "`$CC -V 2>&1`" in
-  *Sun*WorkShop* | *Forte*Developer*)
-    AC_MSG_RESULT(yes)
-    suncc=yes
-  ;;
-  *)
-    AC_MSG_RESULT(no)
-  ;;
-esac
-
 AC_PATH_PROG(MKDEP, mkdep)
 AC_PATH_PROG(MAKEDEPEND, makedepend)
 
-AC_MSG_CHECKING([how to generate dependency info])
-
+CCVERSION=`$CC -V 2>&1`
+AC_MSG_CHECKING([dependency generation])
 if test "$ac_cv_c_compiler_gnu" = yes; then
   CFLAGS="$CFLAGS -Wall -Wno-unused"
   MKDEP="$CC -MM"
   MKDEP_DIRECT="> .depend"
   AC_MSG_RESULT(gcc)
-elif test "$suncc" = yes; then
+elif [ -n "`echo "$CCVERSION" | grep -E ".*Sun.*Workshop.*|.*Forte.*Developer.*" -`"]; then
   MKDEP="$CC -xM"
   # -xM is noisy
   MKDEP_DIRECT="> .depend 2>/dev/null"
@@ -75,10 +35,59 @@ else
   MKDEP=:
   AC_MSG_RESULT([nothing!])
 fi
-
 AC_SUBST(MKDEP)
 AC_SUBST(MKDEP_DIRECT)
 
+if test "$ac_cv_func_setproctitle" = no; then
+  SETPROCTITLE_C=setproctitle.c
+  if test "$ac_cv_func_pstat" = yes; then
+    AC_DEFINE(SPT_TYPE,SPT_PSTAT,[Type of setproctitle emulation to use.])
+  else
+    AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)
+  fi
+else
+  SETPROCTITLE_C=""
+fi
+
+UNAME=`uname -s`
+if [ -n "`echo "$UNAME" | grep -E "Linux|\w*BSD" -`"]; then
+   MY_LIBS="$MY_LIBS -lutil -lcrypt"
+   AC_DEFINE(NOSTREAMS, 1, [Do not use SVR4 streams support in ttyrec.])
+fi
+
+AC_CHECK_HEADER_STDBOOL
+AC_TYPE_UID_T
+AC_TYPE_INT16_T
+AC_TYPE_INT32_T
+AC_TYPE_INT8_T
+AC_TYPE_MODE_T
+AC_TYPE_PID_T
+AC_TYPE_SIZE_T
+AC_TYPE_UINT16_T
+AC_TYPE_UINT32_T
+AC_TYPE_UINT8_T
+AC_CHECK_TYPES([ptrdiff_t])
+
+# Checking more programs
+AC_PROG_LN_S
+AC_PROG_INSTALL
+AC_PROG_LEX(yywrap)
+AC_PROG_YACC
+
+[ -x "$LEX" ] || AC_MSG_ERROR([lex or flex not found.])
+LEXLIBS="$LEXLIB"
+[ -x "$YACC" ] || AC_MSG_ERROR([bison or yacc not found.])
+
+# Checking libraries, headers, library functions
+AC_FUNC_ALLOCA
+AC_CHECK_HEADERS([fcntl.h inttypes.h libintl.h malloc.h stdint.h sys/ioctl.h sys/param.h sys/pstat.h sys/time.h termios.h unistd.h])
+AC_FUNC_FORK
+AC_FUNC_FSEEKO
+AC_FUNC_MALLOC
+AC_FUNC_REALLOC
+AC_FUNC_WAIT3
+AC_CHECK_FUNCS([alarm atexit dup2 ftruncate gettimeofday kqueue memmove memset mkdir openpty pstat putenv setenv setproctitle select setlocale strcasecmp strchr strdup strerror strncasecmp strstr strtoul])
+AC_CHECK_LIB(pthread, pthread_create, [], [AC_MSG_ERROR([need pthreads])])
 AC_SEARCH_LIBS(use_default_colors, [ncursesw],
 [
    AC_MSG_RESULT([Using ncursesw and color.])
@@ -88,13 +97,14 @@ AC_SEARCH_LIBS(use_default_colors, [ncursesw],
    AC_MSG_RESULT([Not using ncursesw, not using color.])
 ])
 
-AC_PROG_INSTALL
 AC_SEARCH_LIBS(initscr, [ncursesw cursesw], [], [
    AC_MSG_ERROR([Cannot find cursesw or ncursesw devel libs.])
 ])
 
 
+# Arguments
 
+# --enable-options
 AC_ARG_ENABLE(debugfile,
 [AS_HELP_STRING([--enable-debugfile],[Enable debugging output to a file.])],
 [], [])
@@ -104,11 +114,25 @@ if test "$enable_debugfile" = yes; then
    AC_DEFINE(USE_DEBUGFILE,1,[Output debugging into to a file in chroot.])
 fi
 
-
 AC_ARG_ENABLE(sqlite,
 [AS_HELP_STRING([--enable-sqlite],[Use SQLite for the database instead of flat text file.])],
 [], [])
 
+AC_ARG_ENABLE(shmem,
+[AS_HELP_STRING([--enable-shmem],[Use a shared memory block to show number of watchers.])],
+[enable_shmem=yes], [])
+
+if test "$enable_shmem" = yes; then
+   AC_CHECK_HEADERS([semaphore.h], [], [AC_MSG_ERROR([semaphore.h not found.])], [])
+   AC_CHECK_HEADERS([sys/ipc.h], [], [AC_MSG_ERROR([sys/ipc.h not found.])], [])
+   AC_CHECK_HEADERS([sys/shm.h], [], [AC_MSG_ERROR([sys/shm.h not found.])], [])
+   AC_MSG_RESULT([Enabled showing number of watchers.])
+   AC_DEFINE(USE_SHMEM,1,[Use shared memory block])
+   MY_LIBS="$MY_LIBS -lrt"
+   # or -pthread?
+fi
+
+# --with-packages
 AC_ARG_WITH(sqlite-db,
 [AS_HELP_STRING([--with-sqlite-db=PATH],[Define the path and filename of the SQLite database.])],
 [dgl_sqlite_db=$withval; enable_sqlite=yes], [dgl_sqlite_db="/dgldir/dgamelaunch.db"])
@@ -120,14 +144,10 @@ if test "$enable_sqlite" = yes; then
    AC_DEFINE_UNQUOTED(USE_SQLITE_DB, "$dgl_sqlite_db", [Path and filename of the SQLite database.])
 fi
 
-
-
-
 dgl_rlimit_core_default=157286400
 AC_ARG_WITH(rlimit-core,
 [AS_HELP_STRING([--with-rlimit-core=SIZE],[Enable and set the core dump maximum size.])],
 [dgl_rlimit_core=$withval; enable_rlimit=yes], [dgl_rlimit_core=$dgl_rlimit_core_default])
-
 if test "$enable_rlimit" = yes; then
    if test "$dgl_rlimit_core" = yes; then
       dgl_rlimit_core=$dgl_rlimit_core_default
@@ -155,47 +175,15 @@ if test "$enable_rlimit" = yes; then
    enable_rlimit=no
 fi
 
-
-AC_ARG_ENABLE(shmem,
-[AS_HELP_STRING([--enable-shmem],[Use a shared memory block to show number of watchers.])],
-[enable_shmem=yes], [])
-
-if test "$enable_shmem" = yes; then
-   AC_CHECK_HEADERS([semaphore.h], [], [AC_MSG_ERROR([semaphore.h not found.])], [])
-   AC_CHECK_HEADERS([sys/ipc.h], [], [AC_MSG_ERROR([sys/ipc.h not found.])], [])
-   AC_CHECK_HEADERS([sys/shm.h], [], [AC_MSG_ERROR([sys/shm.h not found.])], [])
-   AC_MSG_RESULT([Enabled showing number of watchers.])
-   AC_DEFINE(USE_SHMEM,1,[Use shared memory block])
-   MY_LIBS="$MY_LIBS -lrt"
-   # or -pthread?
-fi
-
-
 AC_ARG_WITH(config-file,
 [AS_HELP_STRING([--with-config-file=PATH],[Define the path to the default configuration file.])],
 [configfile=$withval], [configfile="/etc/dgamelaunch.conf"])
-
 AC_DEFINE_UNQUOTED(DEFCONFIG, "$configfile", [Path to the default config file.])
-
-AC_CHECK_HEADERS([sys/pstat.h])
-AC_CHECK_FUNCS([openpty setenv setproctitle pstat kqueue])
-
-if test "$ac_cv_func_setproctitle" = no; then
-  SETPROCTITLE_C=setproctitle.c
-  if test "$ac_cv_func_pstat" = yes; then
-    AC_DEFINE(SPT_TYPE,SPT_PSTAT,[Type of setproctitle emulation to use.])
-  else
-    AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)
-  fi
-else
-  SETPROCTITLE_C=""
-fi
-
 
 LIBS="$LIBS $MY_LIBS"
 
 AC_SUBST(SETPROCTITLE_C)
 AC_SUBST(LEXLIBS)
 
-AC_CONFIG_FILES(Makefile)
+AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
