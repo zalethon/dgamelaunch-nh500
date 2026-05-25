@@ -20,7 +20,7 @@ if test "$ac_cv_c_compiler_gnu" = yes; then
   MKDEP="$CC -MM"
   MKDEP_DIRECT="> .depend"
   AC_MSG_RESULT(gcc)
-elif [ -n "`echo "$CCVERSION" | grep -E ".*Sun.*Workshop.*|.*Forte.*Developer.*" -`"]; then
+elif test -n "`echo "$CCVERSION" | grep -E ".*Sun.*Workshop.*|.*Forte.*Developer.*" -`"; then
   MKDEP="$CC -xM"
   # -xM is noisy
   MKDEP_DIRECT="> .depend 2>/dev/null"
@@ -50,7 +50,7 @@ else
 fi
 
 UNAME=`uname -s`
-if [ -n "`echo "$UNAME" | grep -E "Linux|\w*BSD" -`"]; then
+if test -n "`echo "$UNAME" | grep -E "Linux|\w*BSD" -`"; then
    MY_LIBS="$MY_LIBS -lutil -lcrypt"
    AC_DEFINE(NOSTREAMS, 1, [Do not use SVR4 streams support in ttyrec.])
 fi
@@ -75,9 +75,9 @@ AC_PROG_INSTALL
 AC_PROG_LEX(yywrap)
 AC_PROG_YACC
 
-[ -x "$LEX" ] || AC_MSG_ERROR([lex or flex not found.])
+if test ! -x "`which $LEX`"; then AC_MSG_ERROR([lex or flex not found.]); fi
 LEXLIBS="$LEXLIB"
-[ -x "$YACC" ] || AC_MSG_ERROR([bison or yacc not found.])
+if test ! -x "`which $YACC`"; then AC_MSG_ERROR([bison or yacc not found.]); fi
 
 # Checking libraries, headers, library functions
 AC_FUNC_ALLOCA
