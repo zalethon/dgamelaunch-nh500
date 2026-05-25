@@ -3,8 +3,6 @@
 echo "Generating configuration files..."
 echo
 
-autoconf
+autoupdate
+autoreconf -i
 autoheader
-# evil
-rm -rf autom4te.cache
-./configure "$@"

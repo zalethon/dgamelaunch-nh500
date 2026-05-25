@@ -38,17 +38,6 @@ fi
 AC_SUBST(MKDEP)
 AC_SUBST(MKDEP_DIRECT)
 
-if test "$ac_cv_func_setproctitle" = no; then
-  SETPROCTITLE_C=setproctitle.c
-  if test "$ac_cv_func_pstat" = yes; then
-    AC_DEFINE(SPT_TYPE,SPT_PSTAT,[Type of setproctitle emulation to use.])
-  else
-    AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)
-  fi
-else
-  SETPROCTITLE_C=""
-fi
-
 UNAME=`uname -s`
 if test -n "`echo "$UNAME" | grep -E "Linux|\w*BSD" -`"; then
    MY_LIBS="$MY_LIBS -lutil -lcrypt"
@@ -102,6 +91,19 @@ AC_SEARCH_LIBS(initscr, [ncursesw cursesw], [], [
    AC_MSG_ERROR([Cannot find cursesw or ncursesw devel libs.])
 ])
 
+AC_MSG_CHECKING([if we need to replace setproctitle])
+if test "$ac_cv_func_setproctitle" = no; then
+  AC_MSG_RESULT("using included stproctitle.c")
+  SETPROCTITLE_C=setproctitle.c
+  if test "$ac_cv_func_pstat" = yes; then
+    AC_DEFINE(SPT_TYPE,SPT_PSTAT,[Type of setproctitle emulation to use.])
+  else
+    AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)
+  fi
+else
+  AC_MSG_RESULT("Using system's setproctitle")
+  SETPROCTITLE_C=""
+fi
 
 # Arguments
 
