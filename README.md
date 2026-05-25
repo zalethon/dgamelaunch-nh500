@@ -1,3 +1,5 @@
+See far below for step by step usage!
+
 This repository is a fork of Crawl's version of dgamelaunch[^dgl-crawl], which
 was forked from Paxed's dgamlaunch after January 29th, 2011[^dgl-paxed-2011].
 Work by Paxed continued[^dgl-paxed] after Crawl's fork; this fork has been
@@ -40,6 +42,107 @@ chroot.
 ### Suggestions
 * [suggestion - record terminal size info in ttyrec #17](https://github.com/paxed/dgamelaunch/issues/17)
 * [Allow importing NETHACKOPTIONS environment variable? #16](https://github.com/paxed/dgamelaunch/issues/16)
+
+# dgamelaunch documentation
+From paxed's excellent README
+```
+COMMANDLINE PARAMETERS
+======================
+
+ -a		Ignored.
+ -c		Shows error message and exits. (login shell command)
+ -e		Ignored.
+ -h		Ignored.
+ -i user	Autologin and run the register -command hook for "user"
+    		(with password "user").
+ -p		Ignored.
+ -q		Be quiet, suppress errors.
+ -s		Show players currently playing.
+ -W user:msg	Send message "msg" to all players. The message seems
+    		to come from "user".
+ -S 		Free the shared memory block.
+ -D		Show contents of the shared memory block.
+
+
+ENVIRONMENT VARIABLES
+=====================
+
+ Linux telnetd allows importing the USER environment variables via telnet,
+ while FreeBSD does not.  FreeBSD, on the other hand, does allow the LOGNAME
+ environment variable.  Dgamelaunch will first check USER, then LOGNAME,
+ for "username:password", and tries autologin if either exists.
+ Dgamelaunch-specific DGLAUTH is checked before either of those.
+
+
+ERROR CODES
+===========
+
+   1	Could not terminate stale processes
+   2	Cannot chroot()
+   3	Cannot chdir()
+   4	Cannot setgroups()
+   5	Cannot setgid()
+   6	Cannot setuid()
+   7	Caught HUP
+   8	Cannot run as root: Config file has shed_user = "root"
+   9	Cannot run as root: Config file has shed_user set to UID 0 user.
+  10	Could not setup player
+  11	Cannot run as root: Config file has shed_uid = 0
+  12	Config file has an unrecognized token
+  13	Config file: Negative value not accepted
+  15	dgamelaunch called with -c (login shell command); exited
+  20	No menu defined, or no banner found for menu
+  60	Cannot create a new terminal, or no termcap files.
+  61	Cannot openpty()
+  62	Cannot open /dev/ptmx
+  65	Cannot open master ptsname
+  68	Cannot fcntl inprogress-lock
+  70	Cannot write to inprogress-lock
+  71	ftok() error for shm_key, no "dgamelaunch" file found?
+  72	ftok() error for shm_sem_key, no "dgamelaunch" file found?
+  73	shmget() error, cannot connect to shared memory
+  74	smat() error, cannot attach to shared memory
+  75	Nothing in shared memory?
+  76	sem_init() error, could not initialize shared memory
+  77	sem_wait() error
+  78	sem_post() error
+  95	Cannot fnctl lockfile
+  96	sqlite3_open() failed when checking user existence: could not open login database
+  97	sqlite3_open() failed in writefile()
+  98	sqlite3_exec() failed in writefile()
+  99	Could not open password file
+ 100	Username field too long in login file
+ 101	Email field too long in login file
+ 102	password field too long in login file
+ 103	env field too long in login file
+ 104	Cannot read config file
+ 105	Cannot read default config file
+ 106	Cannot open lockfile or password file
+ 107	fcntl failed on login database in writefile()
+ 108	sqlite3_exec() failed when checking user existence.
+ 109	Too many registered users. (see maxusers setting in config file)
+ 110	Login failed
+ 111	Two users trying to register at the same time
+ 112	Error changing password: cannot have ':' in password
+ 113	Error parsing configuration file
+ 114	exec-command fork failed
+ 115	could not read lock file in writefile()
+ 116	Too many registered users. (see maxusers setting in config file)
+ 117	wall error: no message to send
+ 118	wall error: no players
+ 119	User has a retarded terminal
+ 120	wall error: message too long
+ 121	wall error: "from" username is too short
+ 122	Error changing password: struct "me" does not exist
+ 123	chdir() failed in dgl commands.
+ 140	populate_games(): Cannot open inprogress-dir
+ 145	populate_games(): Inprogress-filename does not have ':' in it
+ 146	populate_games(): Inprogress-filename does not have ': in it (pt. 2)
+ 200	purge_stale_locks(): could not open inprogress-dir
+ 201	purge_stale_locks(): inprogress-file did not have ':' in it
+ 202	purge_stale_locks(): could not read inprogress-file
+ 203	purge_stale_locks(): could not get inprogress-file contents
+```
 
 # install-dgl-nh500 documentation
 ```bash
