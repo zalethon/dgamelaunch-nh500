@@ -41,11 +41,11 @@ virus: virus.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 clean:
+	rm -f *.o configure~ y.tab.* lex.yy.c .depend
 	rm -f $(NAME) nethackstub $(EDITORS)
-	rm -f *.o *~ y.tab.* lex.yy.c .depend .depend.bak
 
 distclean: clean
-	rm -f Makefile config.h config.log config.status
+	rm -f Makefile configure config.h config.h.in config.log config.status config.guess config.sub
 	rm -rf autom4te.cache
 
 install: all
@@ -66,16 +66,6 @@ y.tab.c y.tab.h: config.y
 
 lex.yy.o: lex.yy.c
 y.tab.o: y.tab.c
-
-dist: .depend distclean
-	rm -rf $(NAME)-$(VERSION)
-	autoheader
-	autoconf
-	rm -rf autom4te.cache
-	(cd .. && ln -sf $(CURDIR) $(NAME)-$(VERSION))
-	(cd .. && tar $(addprefix --exclude ,$(exclusions)) -chzf $(NAME)-$(VERSION).tar.gz $(NAME)-$(VERSION))
-	rm -f ../$(NAME)-$(VERSION)
-	@echo "Created source release $(NAME)-$(VERSION).tar.gz"
 
 .depend:
 	$(MKDEP) $(DEP_SRCS) $(MKDEP_DIRECT)
