@@ -1,0 +1,482 @@
+autoscan: warning: missing AC_CHECK_FUNCS([alarm]) wanted by: 
+	ttyrec.c:402
+	virus.c:715
+	virus.c:723
+	virus.c:1772
+	virus.c:1779
+	virus.c:3309
+	virus.c:3374
+	dgamelaunch.c:387
+autoscan: warning: missing AC_CHECK_FUNCS([atexit]) wanted by: 
+	ttyrec.c:168
+autoscan: warning: missing AC_CHECK_FUNCS([dup2]) wanted by: 
+	ttyrec.c:483
+	ttyrec.c:484
+	ttyrec.c:485
+	ttyrec.c:645
+	ttyrec.c:653
+autoscan: warning: missing AC_CHECK_FUNCS([ftruncate]) wanted by: 
+	nethackstub.c:83
+autoscan: warning: missing AC_CHECK_FUNCS([gettimeofday]) wanted by: 
+	ttyrec.c:126
+	ttyrec.c:409
+	ttyrec.c:446
+	ttyrec.c:467
+autoscan: warning: missing AC_CHECK_FUNCS([memmove]) wanted by: 
+	virus.c:2863
+	virus.c:2895
+	virus.c:3363
+	virus.c:3372
+	virus.c:3907
+autoscan: warning: missing AC_CHECK_FUNCS([memset]) wanted by: 
+	config.y:303
+	virus.c:609
+	virus.c:766
+	virus.c:1720
+	virus.c:1721
+	virus.c:2497
+	virus.c:2866
+	virus.c:3016
+	virus.c:3072
+	virus.c:3594
+	virus.c:3609
+	virus.c:3702
+	virus.c:3859
+	dgamelaunch.c:399
+	dgamelaunch.c:518
+	dgamelaunch.c:536
+	dgamelaunch.c:567
+	dgamelaunch.c:791
+	dgamelaunch.c:2160
+	dgamelaunch.c:2339
+	dgamelaunch.c:2864
+	stripgfx.c:347
+	src/y.tab.c:1717
+	src/lex.yy.c:2131
+	src/lex.yy.c:2152
+autoscan: warning: missing AC_CHECK_FUNCS([mkdir]) wanted by: 
+	dgl-common.c:240
+autoscan: warning: missing AC_CHECK_FUNCS([putenv]) wanted by: 
+	dgamelaunch.c:178
+autoscan: warning: missing AC_CHECK_FUNCS([select]) wanted by: 
+	ttyrec.c:665
+	virus.c:145
+	virus.c:146
+	virus.c:3259
+	virus.c:3346
+	ttyplay.c:114
+	ttyplay.c:316
+autoscan: warning: missing AC_CHECK_FUNCS([setlocale]) wanted by: 
+	ee.c:425
+	dgamelaunch.c:2950
+autoscan: warning: missing AC_CHECK_FUNCS([strcasecmp]) wanted by: 
+	ttyrec.c:600
+	ttyrec.c:600
+	ttyrec.c:602
+	ttyrec.c:602
+	ttyrec.c:604
+	ttyrec.c:606
+	config.y:38
+	config.y:515
+	dgl-common.c:431
+	dgl-common.c:442
+	dgl-common.c:446
+	dgl-common.c:467
+	dgl-common.c:479
+	dgl-common.c:491
+	dgl-common.c:502
+	dgl-common.c:506
+	src/y.tab.c:108
+	src/y.tab.c:1975
+autoscan: warning: missing AC_CHECK_FUNCS([strchr]) wanted by: 
+	ttyrec.c:683
+	ttyrec.c:684
+	virus.c:504
+	virus.c:639
+	virus.c:646
+	virus.c:655
+	virus.c:991
+	virus.c:1029
+	virus.c:1433
+	virus.c:1443
+	virus.c:1446
+	virus.c:2048
+	virus.c:2065
+	virus.c:2068
+	virus.c:2654
+	virus.c:2689
+	virus.c:2696
+	virus.c:2700
+	virus.c:2707
+	virus.c:2713
+	virus.c:3100
+	dgl-common.c:599
+	dgl-common.c:660
+	dgl-common.c:663
+	dgl-common.c:681
+	dgamelaunch.c:544
+	dgamelaunch.c:604
+	dgamelaunch.c:1239
+	dgamelaunch.c:1240
+	dgamelaunch.c:1415
+	dgamelaunch.c:1429
+	dgamelaunch.c:1620
+	dgamelaunch.c:2589
+	dgamelaunch.c:2726
+	dgamelaunch.c:2960
+	dgamelaunch.c:3007
+autoscan: warning: missing AC_CHECK_FUNCS([strdup]) wanted by: 
+	config.y:122
+	config.y:146
+	config.y:171
+	config.y:187
+	config.y:192
+	config.y:197
+	config.y:202
+	config.y:207
+	config.y:212
+	config.y:340
+	config.y:341
+	config.y:356
+	config.y:376
+	config.y:407
+	config.y:460
+	config.y:471
+	config.y:476
+	config.y:481
+	config.y:486
+	config.y:491
+	config.y:496
+	config.y:501
+	config.y:506
+	config.y:511
+	config.y:546
+	config.y:584
+	config.y:604
+	config.y:635
+	config.y:636
+	config.l:40
+	ee.c:466
+	setproctitle.c:111
+	virus.c:353
+	virus.c:1088
+	virus.c:1635
+	virus.c:1835
+	virus.c:1890
+	virus.c:3461
+	dgl-common.c:378
+	dgl-common.c:600
+	dgl-common.c:631
+	dgl-common.c:679
+	dgamelaunch.c:157
+	dgamelaunch.c:158
+	dgamelaunch.c:159
+	dgamelaunch.c:160
+	dgamelaunch.c:432
+	dgamelaunch.c:433
+	dgamelaunch.c:508
+	dgamelaunch.c:586
+	dgamelaunch.c:1257
+	dgamelaunch.c:1276
+	dgamelaunch.c:1314
+	dgamelaunch.c:1478
+	dgamelaunch.c:1638
+	dgamelaunch.c:2060
+	dgamelaunch.c:2117
+	dgamelaunch.c:2313
+	dgamelaunch.c:2315
+	dgamelaunch.c:2317
+	dgamelaunch.c:2319
+	dgamelaunch.c:2568
+	dgamelaunch.c:2772
+	dgamelaunch.c:2794
+	dgamelaunch.c:2800
+	dgamelaunch.c:2822
+	dgamelaunch.c:2831
+	dgamelaunch.c:2981
+	dgamelaunch.c:2982
+	io.c:133
+	src/y.tab.c:1512
+	src/y.tab.c:1536
+	src/y.tab.c:1561
+	src/y.tab.c:1577
+	src/y.tab.c:1582
+	src/y.tab.c:1587
+	src/y.tab.c:1592
+	src/y.tab.c:1597
+	src/y.tab.c:1602
+	src/y.tab.c:1758
+	src/y.tab.c:1759
+	src/y.tab.c:1777
+	src/y.tab.c:1805
+	src/y.tab.c:1836
+	src/y.tab.c:1912
+	src/y.tab.c:1931
+	src/y.tab.c:1936
+	src/y.tab.c:1941
+	src/y.tab.c:1946
+	src/y.tab.c:1951
+	src/y.tab.c:1956
+	src/y.tab.c:1961
+	src/y.tab.c:1966
+	src/y.tab.c:1971
+	src/y.tab.c:2008
+	src/y.tab.c:2044
+	src/y.tab.c:2062
+	src/y.tab.c:2101
+	src/y.tab.c:2102
+	src/lex.yy.c:1029
+autoscan: warning: missing AC_CHECK_FUNCS([strerror]) wanted by: 
+	io.c:142
+autoscan: warning: missing AC_CHECK_FUNCS([strncasecmp]) wanted by: 
+	virus.c:1195
+	virus.c:1196
+	virus.c:1202
+	virus.c:1203
+	virus.c:1210
+	virus.c:1785
+	virus.c:1793
+	virus.c:1881
+	virus.c:1895
+	virus.c:1903
+	virus.c:1929
+	virus.c:1930
+	virus.c:1956
+	virus.c:1994
+	virus.c:2003
+	virus.c:2028
+	virus.c:2031
+	virus.c:2032
+	virus.c:2035
+	virus.c:2036
+	virus.c:2039
+	virus.c:2040
+	virus.c:2043
+	virus.c:2044
+	virus.c:2047
+	virus.c:2055
+	virus.c:2102
+	virus.c:2104
+	virus.c:2105
+	virus.c:2143
+	virus.c:2512
+	dgamelaunch.c:1184
+	dgamelaunch.c:2291
+autoscan: warning: missing AC_CHECK_FUNCS([strstr]) wanted by: 
+	dgamelaunch.c:401
+	dgamelaunch.c:403
+	dgamelaunch.c:542
+	dgamelaunch.c:592
+	dgamelaunch.c:593
+autoscan: warning: missing AC_CHECK_FUNCS([strtoul]) wanted by: 
+	config.y:216
+	config.l:34
+	src/y.tab.c:1606
+	src/lex.yy.c:1019
+autoscan: warning: missing AC_CHECK_HEADERS([fcntl.h]) wanted by: 
+	ttyrec.c:54
+	ee.c:71
+	nethackstub.c:29
+	virus.c:78
+	dgl-common.c:10
+	dgamelaunch.c:83
+autoscan: warning: missing AC_CHECK_HEADERS([inttypes.h]) wanted by: 
+	dgamelaunch.c:93
+	src/lex.yy.c:42
+autoscan: warning: missing AC_CHECK_HEADERS([libintl.h]) wanted by: 
+	src/y.tab.c:505
+autoscan: warning: missing AC_CHECK_HEADERS([malloc.h]) wanted by: 
+	src/y.tab.c:591
+autoscan: warning: missing AC_CHECK_HEADERS([stdint.h]) wanted by: 
+	ttyrec.c:66
+	src/y.tab.c:398
+autoscan: warning: missing AC_CHECK_HEADERS([sys/ioctl.h]) wanted by: 
+	ttyrec.c:51
+	virus.c:73
+	dgamelaunch.c:49
+autoscan: warning: missing AC_CHECK_HEADERS([sys/param.h]) wanted by: 
+	dgamelaunch.h:7
+autoscan: warning: missing AC_CHECK_HEADERS([sys/time.h]) wanted by: 
+	ttyrec.c:52
+	ttyrec.h:4
+	virus.c:74
+	dgamelaunch.c:47
+	ttyplay.c:39
+autoscan: warning: missing AC_CHECK_HEADERS([termios.h]) wanted by: 
+	ttyrec.c:56
+	virus.c:71
+	dgamelaunch.c:95
+	ttyplay.c:49
+autoscan: warning: missing AC_CHECK_HEADERS([unistd.h]) wanted by: 
+	ttyrec.c:60
+	ee.c:81
+	nethackstub.c:33
+	setproctitle.c:40
+	virus.c:72
+	dgl-common.c:14
+	dgamelaunch.c:74
+	dgamelaunch.c:94
+	ttyplay.c:48
+	src/lex.yy.c:734
+autoscan: warning: missing AC_CHECK_HEADER_STDBOOL wanted by: 
+	ttyrec.c:433
+autoscan: warning: missing AC_CHECK_TYPES([ptrdiff_t]) wanted by: 
+	src/y.tab.c:463
+autoscan: warning: missing AC_FUNC_ALLOCA wanted by: 
+	src/y.tab.c:587
+autoscan: warning: missing AC_FUNC_FORK wanted by: 
+	ttyrec.c:144
+	ttyrec.c:179
+	ttyrec.c:187
+	ttyrec.c:207
+	ttyrec.c:637
+	dgl-common.c:298
+autoscan: warning: missing AC_FUNC_FSEEKO wanted by: 
+	ttyplay.c:420
+autoscan: warning: missing AC_FUNC_MALLOC wanted by: 
+	ttyrec.c:100
+	config.y:343
+	config.y:375
+	config.y:406
+	config.y:412
+	config.y:596
+	config.y:612
+	config.y:627
+	ee.c:411
+	ee.c:435
+	ee.c:436
+	ee.c:443
+	ee.c:906
+	ee.c:970
+	ee.c:1617
+	ee.c:1691
+	ee.c:2018
+	ee.c:2356
+	ee.c:2418
+	ee.c:2476
+	ee.c:2532
+	setproctitle.c:84
+	virus.c:329
+	virus.c:2478
+	virus.c:2496
+	virus.c:3015
+	virus.c:3071
+	dgl-common.c:223
+	dgl-common.c:224
+	dgl-common.c:678
+	dgl-common.c:687
+	dgl-common.c:691
+	dgl-common.c:694
+	dgamelaunch.c:151
+	dgamelaunch.c:176
+	dgamelaunch.c:428
+	dgamelaunch.c:504
+	dgamelaunch.c:1726
+	dgamelaunch.c:2189
+	dgamelaunch.c:2309
+	dgamelaunch.c:2390
+	dgamelaunch.c:2601
+	dgamelaunch.c:2770
+	ttyplay.c:229
+	src/y.tab.c:633
+	src/y.tab.c:1761
+	src/y.tab.c:1804
+	src/y.tab.c:1835
+	src/y.tab.c:1841
+	src/y.tab.c:2054
+	src/y.tab.c:2074
+	src/y.tab.c:2093
+	src/lex.yy.c:2427
+autoscan: warning: missing AC_FUNC_REALLOC wanted by: 
+	ee.c:412
+	ee.c:536
+	dgl-common.c:677
+	dgamelaunch.c:501
+	dgamelaunch.c:2188
+	src/lex.yy.c:2440
+autoscan: warning: missing AC_FUNC_WAIT3 wanted by: 
+	ttyrec.c:247
+	ttyrec.c:259
+autoscan: warning: missing AC_PROG_LN_S wanted by: 
+	Makefile.in:74
+autoscan: warning: missing AC_PROG_YACC wanted by: 
+	Makefile.in:16
+autoscan: warning: missing AC_TYPE_INT16_T wanted by: 
+	src/lex.yy.c:45
+autoscan: warning: missing AC_TYPE_INT32_T wanted by: 
+	src/lex.yy.c:47
+autoscan: warning: missing AC_TYPE_INT8_T wanted by: 
+	src/lex.yy.c:43
+autoscan: warning: missing AC_TYPE_MODE_T wanted by: 
+	dgl-common.c:58
+	dgamelaunch.h:280
+autoscan: warning: missing AC_TYPE_OFF_T wanted by: 
+	nethackstub.c:83
+	ttyplay.c:364
+	ttyplay.c:400
+	ttyplay.c:405
+	ttyplay.c:456
+	ttyplay.c:459
+	ttyplay.c:460
+	ttyplay.c:461
+autoscan: warning: missing AC_TYPE_PID_T wanted by: 
+	ttyrec.c:77
+	ttyrec.c:78
+	ttyrec.c:79
+	ttyrec.h:26
+	dgl-common.c:287
+	dgamelaunch.c:279
+	dgamelaunch.c:2582
+	dgamelaunch.h:292
+autoscan: warning: missing AC_TYPE_SIZE_T wanted by: 
+	strlcpy.c:43
+	strlcpy.c:47
+	strlcpy.c:51
+	ttyrec.h:10
+	setproctitle.c:60
+	setproctitle.c:122
+	strlcat.c:45
+	strlcat.c:49
+	strlcat.c:53
+	strlcat.c:54
+	dgl-common.c:267
+	dgamelaunch.c:175
+	dgamelaunch.c:283
+	dgamelaunch.c:498
+	dgamelaunch.c:1524
+	dgamelaunch.c:2387
+	dgamelaunch.c:2565
+	dgamelaunch.c:2583
+	dgamelaunch.c:2863
+	dgamelaunch.h:364
+	dgamelaunch.h:364
+	dgamelaunch.h:365
+	dgamelaunch.h:365
+	src/y.tab.c:477
+	src/lex.yy.c:154
+	src/lex.yy.c:249
+	src/lex.yy.c:250
+autoscan: warning: missing AC_TYPE_UID_T wanted by: 
+	config.y:119
+	config.y:266
+	dgl-common.c:788
+	dgl-common.c:863
+	dgamelaunch.h:240
+	src/y.tab.c:1509
+	src/y.tab.c:1671
+	config.y:138
+	config.y:251
+	dgl-common.c:787
+	dgl-common.c:854
+	dgamelaunch.h:239
+	src/y.tab.c:1528
+	src/y.tab.c:1656
+autoscan: warning: missing AC_TYPE_UINT16_T wanted by: 
+	src/lex.yy.c:46
+autoscan: warning: missing AC_TYPE_UINT32_T wanted by: 
+	ttyrec.c:345
+	dgamelaunch.c:1523
+	dgamelaunch.c:1531
+	src/lex.yy.c:48
+autoscan: warning: missing AC_TYPE_UINT8_T wanted by: 
+	src/lex.yy.c:44
