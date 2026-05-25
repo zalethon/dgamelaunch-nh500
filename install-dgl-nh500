@@ -50,6 +50,9 @@
 
 # -q -s --quiet --silent [FLAG]       Causes autogen and make to run quietly.
 
+# --clean                [FLAG]       Skips everything except the clean step.
+#                                     Useful if the process gets interrupted...
+
 
 # Here are some settings which would cause nethack and dgl to be installed
 # in a way that reflects the setup instructions provided by Paxed...
@@ -68,7 +71,7 @@
 while [[ $# -gt 0 ]]; do
   case $1 in
     -h|--help|--usage|-?|--?)
-      printf "`sed -n '3,66p;66q' $0 | tr -d "#"`\n\n"
+      printf "`sed -n '3,69p;69q' $0 | tr -d "#"`\n\n"
       exit 0
       ;;
     -q|-s|--quiet|--silent)
