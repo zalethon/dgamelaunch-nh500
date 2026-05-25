@@ -1,11 +1,50 @@
-The main feature of this fork of dgamelaunch is install-dgl-nh500, which automates installation of NetHack inside
-a dgamelaunch chroot.
+This repository is a fork of Crawl's version of dgamelaunch[^dgl-crawl], which
+was forked from Paxed's dgamlaunch after January 29th, 2011[^dgl-paxed-2011].
+Work by Paxed continued[^dgl-paxed] after Crawl's fork; this fork has been
+patched to merge the two versions.
+
+For history's sake, and in case you're running into trouble and need more
+threads to pull, check out also the original READMEs from each other
+repository: [paxed's readme](README-paxed) and [crawl's readme](README-crawl)
+
+Other than that, the primary feature here is `install-dgl-nh500`, which is a
+drop-in replacement script for `install-dgl-chroot`.
+
+`install-dgl-nh500` It automates installation of NetHack inside a dgamelaunch
+chroot.
+
+[^dgl-crawl]: https://github.com/crawl/dgamelaunch/commit/455308b96fa7522c8c9873653401b4e0cf8f71e4
+[^dgl-paxed-2011]: https://github.com/paxed/dgamelaunch/commit/3d0812cc3c78f713ec244f64d67c922d66dd46f3
+[^dgl-paxed]: https://github.com/paxed/dgamelaunch/commit/55bd7dce01db17356b05da966595ff1ae6097e60
 
 # TODO
-Next: patch dgamelaunch w/ changes made by Paxed after crawl's branch origin (commit 3d0812c January 29th, 2011)
+* Fixing the makefiles so that we don't have to use eldritch bash scripts to
+    install stuff
+* reading through Paxed's TODOs, importing ones from crawl, incorporating
+    issues below
+
+## Issues
+(from Paxed's repository; some may have been addressed by crawl team already)
+### Security
+* [Blank password bypasses certain passwords #20](https://github.com/paxed/dgamelaunch/issues/20)
+* [dgamelaunch vulnerable to pass-the-hash attack #10](https://github.com/paxed/dgamelaunch/issues/10)
+    This one was most likely addressed by crawl's team -- I avoided clobbering
+    any changes they made to password infrastructure... if not, a pull request
+    exists in paxed's repository which proposes to resolve the issue.
+* [dgamelaunch binary should not be in chroot](https://github.com/paxed/dgamelaunch/issues/1)
+    I mean yeah probably
+### Compiling
+* [Does not build with newer Versions of flex #4](https://github.com/paxed/dgamelaunch/issues/4)
+* [yywrap undefined #19](https://github.com/paxed/dgamelaunch/issues/19)
+    Duplicate of #4, probably
+### Suggestions
+* [suggestion - record terminal size info in ttyrec #17](https://github.com/paxed/dgamelaunch/issues/17)
+* [Allow importing NETHACKOPTIONS environment variable? #16](https://github.com/paxed/dgamelaunch/issues/16)
 
 # install-dgl-nh500 documentation
 ```bash
+#!/bin/bash
+
 # install-dgl-nh500
 #
 # Script for setting up Debian DGL/NetHack 5.0.0 environment
@@ -34,7 +73,7 @@ Next: patch dgamelaunch w/ changes made by Paxed after crawl's branch origin (co
 #                                     note that NetHack doesn't have one; all
 #                                     of its immutable data lives in hackdir.
 
-# --menudir <dir> [/etc/menu]         Location for menu files. Really they can
+# --menudir <dir> [<etc>/menu]         Location for menu files. Really they can
 #                                     be anywhere, but this instructs the
 #                                     script where to put the default ones.
 
@@ -43,14 +82,21 @@ Next: patch dgamelaunch w/ changes made by Paxed after crawl's branch origin (co
 # --playground <dir> [/var/nh500]     NetHack is built with this as its
 #                                     'var playground.'
 
-# --dbfile <sqlite3 db> [/var/dgamelaunch.db]   The location for the database.
+# --dbfile <sqlite3 db> [<var>/dgamelaunch.db]   The location for the database.
 
-# --nano [FLAG]                       If you set the nano flag, nano will be
+# --without-nano [FLAG]               If you do not set this flag, nano will be
 #                                     installed in the chroot, for use as an
 #                                     editor. The default configuration
 #                                     assumes it is "built" with nano.
 
+# --without-nh500 [FLAG]              If you set without-nh500, the script will
+#                                     not install NetHack. Know what you're
+#                                     doing!
+
 # -q -s --quiet --silent [FLAG]       Causes autogen and make to run quietly.
+
+# --clean                [FLAG]       Skips everything except the clean step.
+#                                     Useful if the process gets interrupted...
 
 
 # Here are some settings which would cause nethack and dgl to be installed
@@ -64,7 +110,8 @@ Next: patch dgamelaunch w/ changes made by Paxed after crawl's branch origin (co
 # HACKDIR="/nh500"
 # PLAYGROUND="/nh500/var"
 #
-# ./install-dgl-nh500 --prefix /opt/nethack/nethack.alt.org --var /dgldir --etc /. --menudir /. --hackdir /nh500 --playground /nh500/var
+# ./install-dgl-nh500 --prefix /opt/nethack/nethack.alt.org --var /dgldir \
+#   --etc /. --menudir /. --hackdir /nh500 --playground /nh500/var --quiet
 ```
 
 # step-by-step usage
@@ -93,30 +140,33 @@ If it works, brilliant! If it doesn't work, try the NetHack binary:
 sudo chroot /opt/dgamelaunch nh500
 ```
 
-If that fails, it might be a missing library. Check `/opt/dgamelaunch/lib/` and `.../lib64`, and
-compare the contents with the results of `ldd /opt/dgamelaunch/bin/nh500`.
-Then copy over libraries as necessary.
+If that fails, it might be a missing library. Check `/opt/dgamelaunch/lib/`
+and `.../lib64`, and compare the contents with the results of
+`ldd /opt/dgamelaunch/bin/nh500`. Then copy over libraries as necessary.
 
 
-If it's working, then you may wish to let people connect to the server just like other servers you see online.
+If it's working, then you may wish to let people connect to the server just
+like other servers you see online.
 
-To do this, you will need to do something pretty dangerous -- let anyone run dgamelaunch, even though it has
-root privileges.
+To do this, you will need to do something pretty dangerous -- let anyone run
+dgamelaunch, even though it has root privileges.
 
 ```bash
 sudo chmod a+s /opt/dgamelaunch/bin/dgamelaunch.<date>
 ```
 
-Replace <date> with the appropriate string of numbers, obviously. From here, any user can run dgamelaunch on
-your system, which might potentially create a vulnerability.
+Replace <date> with the appropriate string of numbers, obviously. From here,
+any user can run dgamelaunch on your system, which might potentially create
+a vulnerability.
 
 Next, set up a new user. On Debian:
 
 ```bash
 sudo adduser nethack
 ```
-And follow the prompts. Name the user whatever you like, and give bogus info for everything other than password.
-Now edit `/etc/passwd`. The new user's line will look like this:
+And follow the prompts. Name the user whatever you like, and give bogus info
+for everything other than password. Now edit `/etc/passwd`. The new user's
+line will look like this:
 
 ```bash
 nethack:x:<uid>:<gid>:nethack,1,1,1,1:/home/nethack:/bin/bash
@@ -128,8 +178,9 @@ You need to modify the new user's line like so:
 nethack:x:<uid>:<gid>:nethack,1,1,1,1:/home/nethack:/opt/dgamelaunch/bin/dgamelaunch.<date>
 ```
 
-What we are doing there is setting the user nethack's login shell to dgamelaunch. This way, when someone uses
-SSH to connect to your server, and logs in as nethack, they will be presented immediately with dgamelaunch, and
+What we are doing there is setting the user nethack's login shell to
+dgamelaunch. This way, when someone uses SSH to connect to your server, and
+logs in as nethack, they will be presented immediately with dgamelaunch, and
 will not see a shell when it exits.
 
 Congrats on your new server...
@@ -138,22 +189,24 @@ Congrats on your new server...
 # Dungeon Crawl Stone Soup
 First, though, here's how to install Dungeon Crawl Stone Soup:
 1) obtain the source, navigate to that directory
-2) `sudo make install prefix=/ DATADIR=/etc/dcss0341 SAVEDIR=/var/dcss0341 NOWIZARD=1`
-3) navigate to the directory with these scripts (dgamelaunch source dir)
-4) ...
+2) modify <src>/crawl-ref/source/AppHdr.h, and set DGAMELAUNCH (and tweak other
+    settings which interest you)
+3) `sudo make install prefix=/ DATADIR=/etc/dcss0341 SAVEDIR=/var/dcss0341 USE_DGAMELAUNCH=1`
+4) navigate to the directory with these scripts (dgamelaunch source dir)
+5) ...
 ```bash
 ./cpbin -b /bin /bin/crawl /opt/dgamelaunch
 sudo cp /etc/dcss0341 /opt/dgamelaunch/etc/
 sudo cp /var/dcss0341 /opt/dgamelaunch/var/
 ```
-5) (clean up in `/bin/crawl`, `/etc/dcss0341`, `/var/dcss0341` if you want to; don't need those files anymore)
-6) Modify `dgamelaunch.conf` to uncomment relevant lines
-7) ...
+6) (clean up in `/bin/crawl`, `/etc/dcss0341`, `/var/dcss0341` if you want to; don't need those files anymore)
+7) Modify `dgamelaunch.conf` to uncomment relevant lines
+8) ...
 ```bash
 sudo mkdir /opt/dgamelaunch/var/inprogress-dcss0341
 sudo chown -R games:games /opt/dgamelaunch/var
 ```
-8) Modify the main menu (it might help to `dcss-menu.patch` to it)
+9) Modify the main menu (it might help to `dcss-menu.patch` to it)
 
 That's it!
 
