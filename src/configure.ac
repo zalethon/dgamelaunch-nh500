@@ -8,11 +8,10 @@ AC_CONFIG_SRCDIR([dgamelaunch.c])
 AC_CONFIG_HEADERS([config.h])
 
 
-# Testing the environment
+# this stuff feels boilerplatey
 AC_PROG_CC(cc gcc)
 AC_PATH_PROG(MKDEP, mkdep)
 AC_PATH_PROG(MAKEDEPEND, makedepend)
-
 CCVERSION=`$CC -V 2>&1`
 AC_MSG_CHECKING([dependency generation])
 if test "$ac_cv_c_compiler_gnu" = yes; then
@@ -93,7 +92,7 @@ AC_SEARCH_LIBS(initscr, [ncursesw cursesw], [], [
 
 AC_MSG_CHECKING([if we need to replace setproctitle])
 if test "$ac_cv_func_setproctitle" = no; then
-  AC_MSG_RESULT("using included stproctitle.c")
+  AC_MSG_RESULT([using included stproctitle.c])
   SETPROCTITLE_C=setproctitle.c
   if test "$ac_cv_func_pstat" = yes; then
     AC_DEFINE(SPT_TYPE,SPT_PSTAT,[Type of setproctitle emulation to use.])
@@ -101,7 +100,7 @@ if test "$ac_cv_func_setproctitle" = no; then
     AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)
   fi
 else
-  AC_MSG_RESULT("Using system's setproctitle")
+  AC_MSG_RESULT([Using system's setproctitle])
   SETPROCTITLE_C=""
 fi
 
@@ -135,15 +134,18 @@ if test "$enable_shmem" = yes; then
    # or -pthread?
 fi
 
-#
-AC_ARG_VAR("dgl_sqlite_db", [The path and filename of the sqlitedb, from inside the chroot.])
+AC_ARG_VAR([chroot], [The chroot and install location for dgamelaunch. This overrdes --prefix, and does the same thing.])
+prefix=$chroot
 
-
+AC_ARG_VAR([dgl_sqlite_db], [The absolute path and filename for the sqlite db.])
+AC_SUBST(dgl_sqlite_db)
 if test "$enable_sqlite" = yes; then
-   AC_MSG_RESULT([Using SQLite for the database, located at $dgl_sqlite_db])
-   AC_DEFINE(USE_SQLITE3,1,[Use SQLite for the database instead of flat text file.])
+   if test -z "$dgl_sqlite_db"; then
+     dgl_sqlite_db=[dgamelaunch.db]
+   fi
+   AC_DEFINE([USE_SQLITE3],1,[Use SQLite for the database instead of flat text file.])
    MY_LIBS="$MY_LIBS -lsqlite3"
-   AC_DEFINE_UNQUOTED(USE_SQLITE_DB, "$dgl_sqlite_db", [Path and filename of the SQLite database.])
+   AC_DEFINE_UNQUOTED([USE_SQLITE_DB], "$dgl_sqlite_db", [Filename of the SQLite database. It will be put in localstatedir inside the chroot.])
 fi
 
 dgl_rlimit_core_default=157286400
