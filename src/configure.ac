@@ -6,6 +6,7 @@ AC_INIT([dgamelaunch],[1.5.1],[https://github.com/zalethon/dgamelaunch-nh500/iss
 AC_PREREQ([2.72])
 AC_CONFIG_SRCDIR([dgamelaunch.c])
 AC_CONFIG_HEADERS([config.h])
+AC_PREFIX_DEFAULT([/])
 
 
 # Testing the environment
