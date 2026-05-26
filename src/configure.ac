@@ -94,7 +94,7 @@ AC_SEARCH_LIBS(initscr, [ncursesw cursesw], [], [
 
 AC_MSG_CHECKING([if we need to replace setproctitle])
 if test "$ac_cv_func_setproctitle" = no; then
-  AC_MSG_RESULT("using included stproctitle.c")
+  AC_MSG_RESULT([using included stproctitle.c])
   SETPROCTITLE_C=setproctitle.c
   if test "$ac_cv_func_pstat" = yes; then
     AC_DEFINE(SPT_TYPE,SPT_PSTAT,[Type of setproctitle emulation to use.])
@@ -102,7 +102,7 @@ if test "$ac_cv_func_setproctitle" = no; then
     AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)
   fi
 else
-  AC_MSG_RESULT("Using system's setproctitle")
+  AC_MSG_RESULT([Using system setproctitle])
   SETPROCTITLE_C=""
 fi
 
