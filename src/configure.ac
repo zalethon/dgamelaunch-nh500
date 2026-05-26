@@ -9,11 +9,92 @@ AC_CONFIG_HEADERS([config.h])
 AC_PREFIX_DEFAULT([/])
 
 
-# Testing the environment
+#### Arguments to ./configure
+AC_ARG_VAR([CHROOT], [The location of the chroot])
+AC_ARG_VAR([dgl_sqlite_db], [The absolute path and filename for the sqlite db.])
+AC_ARG_VAR([RLIMIT_CORE_MAX], [Set the core dump maximum size.])
+AC_ARG_VAR([RLIMIT_MAX_MEMORY], [Set the maximum memory usage.])
+AC_ARG_VAR([config_file],
+[Define the path to the default configuration file.
+It must be inside the chroot, but this must be its absolute path.])
+
+AC_ARG_ENABLE(debugfile,
+[AS_HELP_STRING([--enable-debugfile],[Enable debugging output to a file.])],
+[enable_debug=yes], [enable_debug=no])
+
+AC_ARG_ENABLE(sqlite,
+[AS_HELP_STRING([--disable-sqlite],[Use a flat file instead of SQLite for the database.])],
+[enable_sqlite=no], [enable_sqlite=yes])
+
+AC_ARG_ENABLE(shmem,
+[AS_HELP_STRING([--disable-shmem],[Disable shared memory; used for # of watchers on watch menu.])],
+[enable_shmem=no], [enable_shmem=yes])
+
+AC_ARG_ENABLE(rlimit,
+[AS_HELP_STRING([Enable core dumps(?)])],
+[enable_rlimit=no], [disable_rlimit=yes])
+
+#### Logic to deal with arguments
+# eg setting defaults, creating DEFINEs and so-called precious variables,
+# perorming extra checks in case 
+# CHROOT defaults to ${HOME}/dgl-chroot (check /root/dgl-chroot, root's home)
+test -z "CHROOT" && CHROOT=${HOME}/dgl-chroot || :;
+
+if test "$enable_sqlite" = yes; then
+   AC_DEFINE([USE_SQLITE3],1,[Use SQLite for the database instead of flat text file.])
+   AC_DEFINE_UNQUOTED([USE_SQLITE_DB], "${CHROOT}${prefix}var/dgamelaunch.db", [Filename of the SQLite database.])
+   MY_LIBS="$MY_LIBS -lsqlite3"
+fi
+
+if test "$enable_debugfile" = yes; then
+   AC_MSG_RESULT([Enabling debugging output to a file.])
+   AC_DEFINE(USE_DEBUGFILE,1,[Output debugging into to a file in chroot.])
+fi
+
+if test "$enable_shmem" = yes; then
+   AC_CHECK_HEADERS([semaphore.h], [], [AC_MSG_ERROR([semaphore.h not found. Disable shmem.])], [])
+   AC_CHECK_HEADERS([sys/ipc.h], [], [AC_MSG_ERROR([sys/ipc.h not found. Disable shmem.])], [])
+   AC_CHECK_HEADERS([sys/shm.h], [], [AC_MSG_ERROR([sys/shm.h not found. Disable shmem.])], [])
+   AC_MSG_RESULT([Enabled showing number of watchers.])
+   AC_DEFINE(USE_SHMEM,1,[Use shared memory block])
+   MY_LIBS="$MY_LIBS -lrt"
+   # or -pthread?
+fi
+dgl_rlimit_core_default=157286400
+dgl_rlimit_as_default=104857600
+if test "$enable_rlimit" = yes; then
+   if test "$dgl_rlimit_core" = yes; then
+      dgl_rlimit_core=$dgl_rlimit_core_default
+   fi
+   AC_CHECK_HEADERS([sys/resource.h], [], [AC_MSG_ERROR([sys/resource.h not found.])], [])
+   AC_MSG_RESULT([Enabled and set maximum core dump size to $dgl_rlimit_core])
+   AC_DEFINE(USE_RLIMIT,1,[Use getrlimit/setrlimit])
+   AC_DEFINE_UNQUOTED(USE_RLIMIT_CORE, $dgl_rlimit_core, [Maximum core dump size])
+   enable_rlimit=no
+fi
+
+if test "$enable_rlimit" = yes; then
+   if test "$dgl_rlimit_as" = yes; then
+      dgl_rlimit_as=$dgl_rlimit_as_default
+   fi
+   AC_CHECK_HEADERS([sys/resource.h], [], [AC_MSG_ERROR([sys/resource.h not found.])], [])
+   AC_MSG_RESULT([Enabled and set maximum memory usage limit to $dgl_rlimit_as])
+   AC_DEFINE(USE_RLIMIT,1,[Use getrlimit/setrlimit])
+   AC_DEFINE_UNQUOTED(USE_RLIMIT_AS, $dgl_rlimit_as, [Maximum mem usage])
+   enable_rlimit=no
+fi
+AC_DEFINE_UNQUOTED(DEFCONFIG, "$config_file", [Path to the default config file.])
+
+AC_SUBST(CHROOT)
+AC_SUBST(dgl_sqlite_db)
+
+LIBS="$LIBS $MY_LIBS"
+#### BOILERPLATE
+# Everything down here is just checks to try and make dgamelaunch portable,
+# until the last 10 lines or so.
 AC_PROG_CC(cc gcc)
 AC_PATH_PROG(MKDEP, mkdep)
 AC_PATH_PROG(MAKEDEPEND, makedepend)
-
 CCVERSION=`$CC -V 2>&1`
 AC_MSG_CHECKING([dependency generation])
 if test "$ac_cv_c_compiler_gnu" = yes; then
@@ -106,89 +187,10 @@ else
   SETPROCTITLE_C=""
 fi
 
-# Arguments
 
-# --enable-options
-AC_ARG_ENABLE(debugfile,
-[AS_HELP_STRING([--enable-debugfile],[Enable debugging output to a file.])],
-[], [])
-
-if test "$enable_debugfile" = yes; then
-   AC_MSG_RESULT([Enabling debugging output to a file.])
-   AC_DEFINE(USE_DEBUGFILE,1,[Output debugging into to a file in chroot.])
-fi
-
-AC_ARG_ENABLE(sqlite,
-[AS_HELP_STRING([--disable-sqlite],[Use a flat file instead of SQLite for the database.])],
-[enable_sqlite=no], [enable_sqlite=yes])
-
-AC_ARG_ENABLE(shmem,
-[AS_HELP_STRING([--disable-shmem],[Disable shared memory; used for # of watchers on watch menu.])],
-[enable_shmem=no], [enable_shmem=yes])
-
-if test "$enable_shmem" = yes; then
-   AC_CHECK_HEADERS([semaphore.h], [], [AC_MSG_ERROR([semaphore.h not found. Disable shmem.])], [])
-   AC_CHECK_HEADERS([sys/ipc.h], [], [AC_MSG_ERROR([sys/ipc.h not found. Disable shmem.])], [])
-   AC_CHECK_HEADERS([sys/shm.h], [], [AC_MSG_ERROR([sys/shm.h not found. Disable shmem.])], [])
-   AC_MSG_RESULT([Enabled showing number of watchers.])
-   AC_DEFINE(USE_SHMEM,1,[Use shared memory block])
-   MY_LIBS="$MY_LIBS -lrt"
-   # or -pthread?
-fi
-
-AC_ARG_VAR([CHROOT], [The location of the chroot])
-if test -z "CHROOT"; then
-  CHROOT=${HOME}/dgl-chroot
-fi
-AC_ARG_VAR([dgl_sqlite_db], [The absolute path and filename for the sqlite db.])
-AC_SUBST(CHROOT)
-AC_SUBST(dgl_sqlite_db)
-if test "$enable_sqlite" = yes; then
-   if test -z "$dgl_sqlite_db"; then
-     dgl_sqlite_db=[dgamelaunch.db]
-   fi
-   AC_DEFINE([USE_SQLITE3],1,[Use SQLite for the database instead of flat text file.])
-   MY_LIBS="$MY_LIBS -lsqlite3"
-   AC_DEFINE_UNQUOTED([USE_SQLITE_DB], "${CHROOT}${prefix}var/${dgl_sqlite_db}", [Filename of the SQLite database. It will be put in localstatedir inside the chroot.])
-fi
-
-dgl_rlimit_core_default=157286400
-AC_ARG_WITH(rlimit-core,
-[AS_HELP_STRING([--with-rlimit-core=SIZE],[Enable and set the core dump maximum size.])],
-[dgl_rlimit_core=$withval; enable_rlimit=yes], [dgl_rlimit_core=$dgl_rlimit_core_default])
-if test "$enable_rlimit" = yes; then
-   if test "$dgl_rlimit_core" = yes; then
-      dgl_rlimit_core=$dgl_rlimit_core_default
-   fi
-   AC_CHECK_HEADERS([sys/resource.h], [], [AC_MSG_ERROR([sys/resource.h not found.])], [])
-   AC_MSG_RESULT([Enabled and set maximum core dump size to $dgl_rlimit_core])
-   AC_DEFINE(USE_RLIMIT,1,[Use getrlimit/setrlimit])
-   AC_DEFINE_UNQUOTED(USE_RLIMIT_CORE, $dgl_rlimit_core, [Maximum core dump size])
-   enable_rlimit=no
-fi
-
-dgl_rlimit_as_default=104857600
-AC_ARG_WITH(rlimit-as,
-[AS_HELP_STRING([--with-rlimit-as=SIZE],[Enable and set the maximum memory usage.])],
-[dgl_rlimit_as=$withval; enable_rlimit=yes], [dgl_rlimit_as=$dgl_rlimit_as_default])
-
-if test "$enable_rlimit" = yes; then
-   if test "$dgl_rlimit_as" = yes; then
-      dgl_rlimit_as=$dgl_rlimit_as_default
-   fi
-   AC_CHECK_HEADERS([sys/resource.h], [], [AC_MSG_ERROR([sys/resource.h not found.])], [])
-   AC_MSG_RESULT([Enabled and set maximum memory usage limit to $dgl_rlimit_as])
-   AC_DEFINE(USE_RLIMIT,1,[Use getrlimit/setrlimit])
-   AC_DEFINE_UNQUOTED(USE_RLIMIT_AS, $dgl_rlimit_as, [Maximum mem usage])
-   enable_rlimit=no
-fi
-
-AC_ARG_WITH(config-file,
-[AS_HELP_STRING([--with-config-file=PATH],[Define the path to the default configuration file.])],
-[configfile=$withval], [configfile="/etc/dgamelaunch.conf"])
-AC_DEFINE_UNQUOTED(DEFCONFIG, "$configfile", [Path to the default config file.])
-
-LIBS="$LIBS $MY_LIBS"
+#### END PORTABILITY CHECKS
+# Now it's just making magic variables (afaic) and defining other output for
+# the Makefile...
 
 AC_SUBST(SETPROCTITLE_C)
 AC_SUBST(LEXLIBS)
