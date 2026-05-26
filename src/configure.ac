@@ -132,7 +132,7 @@ AC_ARG_ENABLE(rlimit,
 # eg setting defaults, creating DEFINEs and so-called precious variables,
 # perorming extra checks in case 
 # CHROOT defaults to ${HOME}/dgl-chroot (check /root/dgl-chroot, root's home)
-test -z "CHROOT" && CHROOT=${HOME}/dgl-chroot || :;
+test -z "$CHROOT" && CHROOT=${HOME}/dgl-chroot || :;
 
 if test "$enable_sqlite" = yes; then
    AC_DEFINE([USE_SQLITE3],1,[Use SQLite for the database instead of flat text file.])
