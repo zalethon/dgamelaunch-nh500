@@ -135,10 +135,9 @@ if test "$enable_shmem" = yes; then
    # or -pthread?
 fi
 
-# --with-packages
-AC_ARG_WITH(sqlite-db,
-[AS_HELP_STRING([--with-sqlite-db=PATH],[Define the path and filename of the SQLite database.])],
-[dgl_sqlite_db=$withval; enable_sqlite=yes], [dgl_sqlite_db="/dgldir/dgamelaunch.db"])
+#
+AC_ARG_VAR("dgl_sqlite_db", [The path and filename of the sqlitedb, from inside the chroot.])
+
 
 if test "$enable_sqlite" = yes; then
    AC_MSG_RESULT([Using SQLite for the database, located at $dgl_sqlite_db])
