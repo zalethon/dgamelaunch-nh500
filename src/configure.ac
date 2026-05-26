@@ -135,13 +135,18 @@ if test "$enable_shmem" = yes; then
    # or -pthread?
 fi
 
-#
-AC_ARG_VAR("dgl_sqlite_db", [The path and filename of the sqlitedb, from inside the chroot.])
-
-
+AC_ARG_VAR([CHROOT], [The location of the chroot])
+if test -z "CHROOT"; then
+  CHROOT=${HOME}/dgl-chroot
+fi
+AC_ARG_VAR([dgl_sqlite_db], [The absolute path and filename for the sqlite db.])
+AC_SUBST(CHROOT)
+AC_SUBST(dgl_sqlite_db)
 if test "$enable_sqlite" = yes; then
-   AC_MSG_RESULT([Using SQLite for the database, located at $dgl_sqlite_db])
-   AC_DEFINE(USE_SQLITE3,1,[Use SQLite for the database instead of flat text file.])
+   if test -z "$dgl_sqlite_db"; then
+     dgl_sqlite_db=[dgamelaunch.db]
+   fi
+   AC_DEFINE([USE_SQLITE3],1,[Use SQLite for the database instead of flat text file.])
    MY_LIBS="$MY_LIBS -lsqlite3"
    AC_DEFINE_UNQUOTED(USE_SQLITE_DB, "$dgl_sqlite_db", [Path and filename of the SQLite database.])
 fi
