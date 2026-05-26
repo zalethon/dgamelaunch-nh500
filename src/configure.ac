@@ -6,6 +6,7 @@ AC_INIT([dgamelaunch],[1.5.1],[https://github.com/zalethon/dgamelaunch-nh500/iss
 AC_PREREQ([2.72])
 AC_CONFIG_SRCDIR([dgamelaunch.c])
 AC_CONFIG_HEADERS([config.h])
+AC_PREFIX_DEFAULT([/])
 
 
 # this stuff feels boilerplatey
@@ -100,7 +101,7 @@ if test "$ac_cv_func_setproctitle" = no; then
     AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)
   fi
 else
-  AC_MSG_RESULT([Using system's setproctitle])
+  AC_MSG_RESULT([Using system setproctitle])
   SETPROCTITLE_C=""
 fi
 
@@ -134,10 +135,12 @@ if test "$enable_shmem" = yes; then
    # or -pthread?
 fi
 
-AC_ARG_VAR([chroot], [The chroot and install location for dgamelaunch. This overrdes --prefix, and does the same thing.])
-prefix=$chroot
-
+AC_ARG_VAR([CHROOT], [The location of the chroot])
+if test -z "CHROOT"; then
+  CHROOT=${HOME}/dgl-chroot
+fi
 AC_ARG_VAR([dgl_sqlite_db], [The absolute path and filename for the sqlite db.])
+AC_SUBST(CHROOT)
 AC_SUBST(dgl_sqlite_db)
 if test "$enable_sqlite" = yes; then
    if test -z "$dgl_sqlite_db"; then
@@ -145,7 +148,7 @@ if test "$enable_sqlite" = yes; then
    fi
    AC_DEFINE([USE_SQLITE3],1,[Use SQLite for the database instead of flat text file.])
    MY_LIBS="$MY_LIBS -lsqlite3"
-   AC_DEFINE_UNQUOTED([USE_SQLITE_DB], "$dgl_sqlite_db", [Filename of the SQLite database. It will be put in localstatedir inside the chroot.])
+   AC_DEFINE_UNQUOTED([USE_SQLITE_DB], "${CHROOT}${prefix}var/${dgl_sqlite_db}", [Filename of the SQLite database. It will be put in localstatedir inside the chroot.])
 fi
 
 dgl_rlimit_core_default=157286400
