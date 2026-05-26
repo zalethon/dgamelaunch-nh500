@@ -126,9 +126,9 @@ AC_ARG_ENABLE(shmem,
 [enable_shmem=no], [enable_shmem=yes])
 
 if test "$enable_shmem" = yes; then
-   AC_CHECK_HEADERS([semaphore.h], [], [AC_MSG_ERROR([semaphore.h not found.])], [])
-   AC_CHECK_HEADERS([sys/ipc.h], [], [AC_MSG_ERROR([sys/ipc.h not found.])], [])
-   AC_CHECK_HEADERS([sys/shm.h], [], [AC_MSG_ERROR([sys/shm.h not found.])], [])
+   AC_CHECK_HEADERS([semaphore.h], [], [AC_MSG_ERROR([semaphore.h not found. Disable shmem.])], [])
+   AC_CHECK_HEADERS([sys/ipc.h], [], [AC_MSG_ERROR([sys/ipc.h not found. Disable shmem.])], [])
+   AC_CHECK_HEADERS([sys/shm.h], [], [AC_MSG_ERROR([sys/shm.h not found. Disable shmem.])], [])
    AC_MSG_RESULT([Enabled showing number of watchers.])
    AC_DEFINE(USE_SHMEM,1,[Use shared memory block])
    MY_LIBS="$MY_LIBS -lrt"
