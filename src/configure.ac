@@ -57,9 +57,11 @@ AC_SEARCH_LIBS(initscr, [ncursesw cursesw], [], [
 ])
 
 #### Arguments to ./configure
-AC_ARG_VAR([CHROOT], [The location of the chroot])
-AC_ARG_VAR([RLIMIT_CORE_MAX], [Set the core dump maximum size. Irrelevant if --enable-rlimit is not passed.])
-AC_ARG_VAR([RLIMIT_MAX_MEMORY], [Set the maximum memory usage.])
+AC_ARG_VAR([CHROOT], [The location of the chroot. Default ~/dgl-chroot])
+AC_ARG_VAR([RLIMIT_CORE_MAX], [Set the core dump maximum size in bytes. Default 150Mb. Irrelevant if --enable-rlimit is not passed.])
+AC_ARG_VAR([RLIMIT_MAX_MEMORY], [Set the maximum memory usage in bytes. Default 100Mb. Irrelevant if --enable-rlimit is not passed.])
+AC_ARG_VAR([COMPRESSBIN], [The compress binary to be copied for NetHack])
+AC_ARG_VAR([GREPBIN], [The grep bin to be copied flr dgamelaunch])
 
 AC_ARG_ENABLE(sqlite,
 [AS_HELP_STRING([--disable-sqlite],[Use a flat file instead of SQLite for the database.])],
@@ -88,6 +90,10 @@ test -z "$CHROOT" && CHROOT=${HOME}/dgl-chroot || :;
 test -z "$RLIMIT_CORE_MAX" && RLIMIT_CORE_MAX=157286400 || :;
 # RLIMIT_MAX_MEMORY default = 100Mb
 test -z "$RLIMIT_MAX_MEMORY" && RLIMIT_MAX_MEMORY=104857600 || :;
+# COMPRESSBIN default = gzip
+test ! -x "`which "$COMPRESSBIN"`" || COMPRESSBIN=`which gzip` && :;
+# GREPBIN default = grep
+test ! -x "`which $GREPBIN`" || GREPBIN=`which grep` && :;
 
 ## Logic for 
 if test "$enable_sqlite" = yes; then
@@ -173,6 +179,8 @@ AC_SUBST(MKDEP)
 AC_SUBST(MKDEP_DIRECT)
 AC_SUBST(SETPROCTITLE_C)
 AC_SUBST(LEXLIBS)
+AC_SUBST(GREPBIN)
+AC_SUBST(COMPRESSBIN)
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
