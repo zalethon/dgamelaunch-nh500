@@ -119,7 +119,7 @@ fi
 
 AC_ARG_ENABLE(sqlite,
 [AS_HELP_STRING([--enable-sqlite],[Use SQLite for the database instead of flat text file.])],
-[], [])
+[enable_sqlite=yes], [])
 
 AC_ARG_ENABLE(shmem,
 [AS_HELP_STRING([--enable-shmem],[Use a shared memory block to show number of watchers.])],
