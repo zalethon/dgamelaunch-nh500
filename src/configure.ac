@@ -149,7 +149,7 @@ if test "$enable_sqlite" = yes; then
    fi
    AC_DEFINE([USE_SQLITE3],1,[Use SQLite for the database instead of flat text file.])
    MY_LIBS="$MY_LIBS -lsqlite3"
-   AC_DEFINE_UNQUOTED(USE_SQLITE_DB, "$dgl_sqlite_db", [Path and filename of the SQLite database.])
+   AC_DEFINE_UNQUOTED([USE_SQLITE_DB], "${CHROOT}${prefix}var/${dgl_sqlite_db}", [Filename of the SQLite database. It will be put in localstatedir inside the chroot.])
 fi
 
 dgl_rlimit_core_default=157286400
