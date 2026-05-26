@@ -118,12 +118,12 @@ if test "$enable_debugfile" = yes; then
 fi
 
 AC_ARG_ENABLE(sqlite,
-[AS_HELP_STRING([--enable-sqlite],[Use SQLite for the database instead of flat text file.])],
-[enable_sqlite=yes], [])
+[AS_HELP_STRING([--disable-sqlite],[Use a flat file instead of SQLite for the database.])],
+[enable_sqlite=no], [enable_sqlite=yes])
 
 AC_ARG_ENABLE(shmem,
-[AS_HELP_STRING([--enable-shmem],[Use a shared memory block to show number of watchers.])],
-[enable_shmem=yes], [])
+[AS_HELP_STRING([--disable-shmem],[Disable shared memory; used for # of watchers on watch menu.])],
+[enable_shmem=no], [enable_shmem=yes])
 
 if test "$enable_shmem" = yes; then
    AC_CHECK_HEADERS([semaphore.h], [], [AC_MSG_ERROR([semaphore.h not found.])], [])

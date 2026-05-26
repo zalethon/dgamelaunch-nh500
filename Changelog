@@ -1,3 +1,8 @@
+1.5.2 (2026/05/xx)
+	* Manually merged Crawl Stone Soup version (commit 455308b in this history)
+	  and Paxed's version (commit 55bd7dc in their history, at
+	  https://github.com/paxed/dgamelaunch)
+    * sqlite and shmem enabled by default for new builds
 1.5.2 (2011/xx/xx)
 	* Output some identifying information into the ttyrecs.
 	* Added banner inclusion and configurable string replacements.
