@@ -429,8 +429,8 @@ if [ -n "$INSTALLNH" ]; then
   LIBS="$LIBS `findlibs /$NETHACKBIN`"
   LHACKDIR="`echo "$HACKDIR" | awk -F/ 'BEGIN {OFS=FS} {NF-=1; print}'`"
   LPLAYGROUND="`echo "$PLAYGROUND" | awk -F/ 'BEGIN {OFS=FS} {NF-=1; print}'`"
-  mkdir $LHACKDIR
-  mkdir $LPLAYGROUND
+  mkdir -p "$LHACKDIR"
+  mkdir -p "$LPLAYGROUND"
   cp -r "/$HACKDIR" "$LHACKDIR/"
   cp "/$NETHACKBIN" "$HACKDIR/$NHBINFILE"
   ln -s "/$HACKDIR/$NHBINFILE" bin/nh500
