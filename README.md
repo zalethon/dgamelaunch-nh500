@@ -5,6 +5,40 @@ was forked from Paxed's dgamlaunch after January 29th, 2011[^dgl-paxed-2011].
 Work by Paxed continued[^dgl-paxed] after Crawl's fork; this fork has been
 patched to merge the two versions.
 
+```
+Diagram -- paxed branch won't be reflected correctly in git history
+    [   BRANCH   ]
+    [CRAWL][PAXED]
+
+    3d0812c             paxed committed on Jan 29, 2011
+        |\
+        |  \
+    08e687f  \          greensnark committed on Mar 22, 2011
+        |      \
+        |       |
+        .   3405bcf     paxed committed on Mar 26, 2011
+        .       .       
+(more commits truncated)
+        .       .
+        .   55bd7dc     paxed committed on May 11, 2019
+        |       |
+        |       .
+    455308b     |       aidanholm committed on Mar 7, 2020
+        |       .    
+        .       .
+(crawl branch forked)
+        .       .
+        |       |     
+    a81b934     .       zalethon committed on May 22, 2026
+        |      /       
+        .    .
+(paxed branch manually merged in)
+        .  .
+        |.
+    7c45d5a             zalethon committed on May 24, 2026
+```
+
+
 For history's sake, and in case you're running into trouble and need more
 threads to pull, check out also the original READMEs from each other
 repository: [paxed's readme](README-paxed) and [crawl's readme](README-crawl)
