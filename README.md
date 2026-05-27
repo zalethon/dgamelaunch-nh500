@@ -326,24 +326,25 @@ Congrats on your new server...
 # Dungeon Crawl Stone Soup
 First, though, here's how to install Dungeon Crawl Stone Soup:
 1) obtain the source, navigate to that directory
-2) modify `<src>/crawl-ref/source/AppHdr.h`, and set `DGAMELAUNCH` (and tweak
+2) `sudo make install prefix=/ DATADIR=/etc/dcss0341 SAVEDIR=/var/dcss0341 USE_DGAMELAUNCH=1`
+Note: 2) instead of setting USE_DGAMELAUNCH, you can also edi
+`<src>/crawl-ref/source/AppHdr.h`, and `#define DGAMELAUNCH=1` there. (and tweak
     other settings which interest you)
-3) `sudo make install prefix=/ DATADIR=/etc/dcss0341 SAVEDIR=/var/dcss0341 USE_DGAMELAUNCH=1`
-4) navigate to the directory with these scripts (dgamelaunch source dir)
-5) ...
+3) navigate to the directory with these scripts (dgamelaunch source dir)
+4) ...
 ```bash
 ./cpbin -b /bin /bin/crawl /opt/dgamelaunch
 sudo cp /etc/dcss0341 /opt/dgamelaunch/etc/
 sudo cp /var/dcss0341 /opt/dgamelaunch/var/
 ```
-6) (clean up in `/bin/crawl`, `/etc/dcss0341`, `/var/dcss0341` if you want to; don't need those files anymore)
-7) Modify `dgamelaunch.conf` to uncomment relevant lines
-8) ...
+5) (clean up in `/bin/crawl`, `/etc/dcss0341`, `/var/dcss0341` if you want to; don't need those files anymore)
+6) Modify `dgamelaunch.conf` to uncomment relevant lines
+7) ...
 ```bash
 sudo mkdir /opt/dgamelaunch/var/inprogress-dcss0341
 sudo chown -R games:games /opt/dgamelaunch/var
 ```
-9) Modify the main menu (it might help to `dcss-menu.patch` to it)
+8) Modify the main menu (it might help to `dcss-menu.patch` to it)
 
 That's it!
 
